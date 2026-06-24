@@ -46,88 +46,65 @@ export function FirstAidKit({ onModuleSelect }: FirstAidKitProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center py-8"
+      className="flex flex-col items-center"
     >
-      {/* Medical Cross Icon - Top */}
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, type: "spring" }}
-        className="mb-8"
-      >
-        <div className="relative">
-          {/* White circle background */}
-          <div className="w-28 h-28 bg-white rounded-full shadow-2xl flex items-center justify-center">
-            {/* Red Cross */}
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-5 h-16 bg-red-600 rounded-sm"></div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-5 bg-red-600 rounded-sm"></div>
-              </div>
+      {/* Hero */}
+      <div className="mb-10 max-w-2xl text-center md:mb-14">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.15, type: 'spring' }}
+          className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-xl md:h-24 md:w-24"
+        >
+          <div className="relative h-12 w-12 md:h-14 md:w-14">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-full w-[30%] rounded-sm bg-red-600" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-[30%] w-full rounded-sm bg-red-600" />
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* First Aid Kit Container */}
+        <h1 className="font-display text-3xl text-gray-900 md:text-4xl">Primeros Auxilios</h1>
+        <p className="mt-3 text-gray-500 md:text-lg">
+          Selecciona el tipo de emergencia. Te guiamos con preguntas rápidas para saber qué hacer.
+        </p>
+      </div>
+
+      {/* Module Grid */}
+      <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+        {modules.map((module, index) => (
+          <motion.button
+            key={module.id}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 + index * 0.08 }}
+            whileHover={{ scale: 1.04, y: -4 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => onModuleSelect(module.id)}
+            className={`${module.color} ${module.hoverColor} flex flex-col items-center gap-3 rounded-3xl p-6 text-white shadow-lg transition-all duration-200 md:gap-4 md:p-8`}
+          >
+            <module.icon size={40} strokeWidth={2} className="md:hidden" />
+            <module.icon size={52} strokeWidth={1.75} className="hidden md:block" />
+            <div className="text-center">
+              <div className="mb-1 text-base md:text-lg">{module.name}</div>
+              <div className="text-xs opacity-90 md:text-sm">{module.description}</div>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Bottom Info */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="w-full bg-white shadow-2xl overflow-hidden relative"
-        style={{
-          borderRadius: '2rem 2rem 1.5rem 1.5rem',
-          border: '6px solid #DC2626'
-        }}
+        transition={{ delay: 0.7 }}
+        className="mt-10 max-w-md border-t border-gray-200 pt-6 text-center md:mt-14"
       >
-        {/* Handle */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-red-600 rounded-t-xl border-4 border-red-700"></div>
-
-        {/* Header inside kit */}
-        <div className="bg-red-600 pt-6 pb-4 px-6">
-          <h1 className="text-2xl text-center text-white mb-1">Primeros Auxilios</h1>
-          <p className="text-center text-white/90 text-sm">Selecciona el tipo de emergencia</p>
-        </div>
-
-        {/* Body */}
-        <div className="p-6">
-
-          {/* Module Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {modules.map((module, index) => (
-              <motion.button
-                key={module.id}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onModuleSelect(module.id)}
-                className={`${module.color} ${module.hoverColor} rounded-2xl p-6 text-white shadow-lg transition-all duration-200 flex flex-col items-center gap-3`}
-              >
-                <module.icon size={48} strokeWidth={2} />
-                <div className="text-center">
-                  <div className="text-lg mb-1">{module.name}</div>
-                  <div className="text-xs opacity-90">{module.description}</div>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Bottom Info */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-6 pt-6 border-t border-gray-200 text-center"
-          >
-            <p className="text-sm text-gray-600">
-              Responde unas preguntas rápidas para obtener ayuda inmediata
-            </p>
-          </motion.div>
-        </div>
+        <p className="text-sm text-gray-500">
+          Responde unas preguntas rápidas para obtener ayuda inmediata
+        </p>
       </motion.div>
     </motion.div>
   );

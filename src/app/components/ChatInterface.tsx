@@ -270,7 +270,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const currentColor = moduleColors[module];
 
   return (
-    <div className="flex flex-col h-screen max-h-[100dvh]">
+    <div className="flex h-screen max-h-[100dvh] w-full flex-col overflow-hidden bg-white md:h-[82vh] md:max-h-[760px] md:rounded-[2rem] md:shadow-2xl md:ring-1 md:ring-black/5">
       {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -376,7 +376,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          className="px-4"
+          className="px-4 pb-4"
         >
           <a
             href="tel:911"
