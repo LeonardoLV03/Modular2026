@@ -270,7 +270,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const currentColor = moduleColors[module];
 
   return (
-    <div className="flex h-screen max-h-[100dvh] w-full flex-col overflow-hidden bg-white md:h-[82vh] md:max-h-[760px] md:rounded-[2rem] md:shadow-2xl md:ring-1 md:ring-black/5">
+    <div className="flex flex-1 max-h-[100dvh] w-full flex-col overflow-hidden bg-white">
       {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
