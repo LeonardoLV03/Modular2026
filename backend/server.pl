@@ -626,6 +626,641 @@ diagnostico_quemadura(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso
 
 diagnostico(quemadura, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
     diagnostico_quemadura(Respuestas, EsEmergencia, Severidad, Recomendaciones, _Caso, _Pct, _Accion, _Resultados, _ExactOnly).
+% ============================================================
+% MÓDULO: FRACTURA
+% ============================================================
+
+pregunta(fractura, 1, 'Zona del cuerpo lesionada').
+pregunta(fractura, 2, 'Apariencia visual de la lesión').
+pregunta(fractura, 3, 'Capacidad de movimiento en la zona').
+pregunta(fractura, 4, 'Intensidad del dolor').
+pregunta(fractura, 5, 'Síntomas adicionales o señales de alarma').
+
+total_preguntas(fractura, 5).
+
+opcion_fractura(1, 'Brazo, antebrazo o muñeca',   extremidad_superior).
+opcion_fractura(1, 'Pierna, muslo o tobillo',     extremidad_inferior).
+opcion_fractura(1, 'Costilla o tórax',            zona_torax).
+opcion_fractura(1, 'Columna vertebral o cuello',  zona_columna).
+opcion_fractura(1, 'Mano, pie o dedo',            extremidad_periferica).
+opcion_fractura(1, 'No estoy seguro',             zona_desconocida).
+
+opcion_fractura(2, 'Hueso visiblemente expuesto',           hueso_expuesto).
+opcion_fractura(2, 'Deformidad visible sin hueso expuesto', deformidad_frac).
+opcion_fractura(2, 'Solo inflamación o moretón',            inflamacion_frac).
+opcion_fractura(2, 'Sin cambios visibles',                  sin_deformidad_frac).
+
+opcion_fractura(3, 'No puede moverla en absoluto',      no_puede_mover_frac).
+opcion_fractura(3, 'Puede moverla con mucho dolor',     movimiento_muy_doloroso).
+opcion_fractura(3, 'Puede moverla con algo de dolor',   movimiento_doloroso_frac).
+opcion_fractura(3, 'Movimiento normal con dolor leve',  movimiento_normal_frac).
+
+opcion_fractura(4, 'Dolor muy intenso y constante', dolor_intenso_frac).
+opcion_fractura(4, 'Dolor moderado al presionar',   dolor_moderado_frac).
+opcion_fractura(4, 'Dolor leve o puntual',          dolor_leve_frac).
+opcion_fractura(4, 'Sin dolor significativo',       sin_dolor_frac).
+
+opcion_fractura(5, 'Hormigueo o pérdida de sensibilidad', hormigueo_frac).
+opcion_fractura(5, 'Piel pálida, fría o sudoración fría', shock_frac).
+opcion_fractura(5, 'Hemorragia visible en la zona',       sangrado_frac).
+opcion_fractura(5, 'Ninguno de los anteriores',           sin_alarma_frac).
+
+sintoma_emergencia_fractura(hueso_expuesto).
+sintoma_emergencia_fractura(zona_columna).
+sintoma_emergencia_fractura(hormigueo_frac).
+sintoma_emergencia_fractura(shock_frac).
+sintoma_emergencia_fractura(sangrado_frac).
+
+respuestas_fractura_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_fractura(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_fractura(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_fractura(S), !.
+
+nivel_fractura(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_fractura(S), !.
+nivel_fractura(moderada, Sintomas) :-
+    ( member(deformidad_frac, Sintomas)
+    ; member(no_puede_mover_frac, Sintomas)
+    ; member(dolor_intenso_frac, Sintomas)
+    ), !.
+nivel_fractura(leve, _).
+
+diagnostico(fractura, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_fractura_a_sintomas(Respuestas, Sintomas),
+    ( nivel_fractura(grave, Sintomas)    -> Nivel = grave
+    ; nivel_fractura(moderada, Sintomas) -> Nivel = moderada
+    ;                                       Nivel = leve ),
+    ( hay_emergencia_fractura(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato',
+            'NO muevas a la persona si sospechas lesión en columna o cuello',
+            'Si hay hueso expuesto, cubre con gasa limpia sin presionar ni intentar recolocar el hueso',
+            'Controla el sangrado aplicando presión suave alrededor de la herida, no sobre ella',
+            'Si hay hormigueo o pérdida de sensibilidad, inmoviliza sin forzar ninguna posición',
+            'Mantén a la persona calmada y abrigada hasta que llegue la ayuda',
+            'NO administres alimentos ni medicamentos por la boca'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Inmoviliza la zona usando férulas improvisadas (tabla, revista, cartón) con vendas',
+            'NO intentes realinear el hueso ni forzar una posición',
+            'Aplica hielo envuelto en tela durante 20 minutos para reducir la inflamación',
+            'Eleva la extremidad si es posible y no aumenta el dolor',
+            'Traslada a urgencias lo antes posible para radiografía',
+            'Monitorea circulación distal: color, temperatura y pulso en dedos'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Inmoviliza la zona y evita apoyar o cargar peso sobre ella',
+            'Aplica hielo envuelto en tela 15-20 minutos para la inflamación',
+            'Eleva la extremidad afectada',
+            'Consulta a urgencias para descartar fractura con radiografía',
+            'No fuerces movimiento aunque el dolor sea tolerable',
+            'Evita masajear la zona afectada'
+        ]
+    ).
+
+% ============================================================
+% MÓDULO: INTOXICACIÓN
+% ============================================================
+
+pregunta(intoxicacion, 1, 'Cómo ocurrió la intoxicación').
+pregunta(intoxicacion, 2, 'Estado de consciencia de la persona').
+pregunta(intoxicacion, 3, 'Tiempo transcurrido desde la exposición').
+pregunta(intoxicacion, 4, 'Síntomas que presenta actualmente').
+pregunta(intoxicacion, 5, 'Conocimiento sobre la sustancia involucrada').
+
+total_preguntas(intoxicacion, 5).
+
+opcion_intoxicacion(1, 'Ingirió medicamentos en exceso',   ingestion_medicamentos).
+opcion_intoxicacion(1, 'Ingirió una sustancia química',    ingestion_quimica).
+opcion_intoxicacion(1, 'Ingirió alimentos en mal estado',  ingestion_alimentos).
+opcion_intoxicacion(1, 'Inhaló gases, vapores o humo',    inhalacion_tox).
+opcion_intoxicacion(1, 'Contacto con piel o mucosas',     contacto_piel_tox).
+opcion_intoxicacion(1, 'No sé cómo ocurrió',              causa_desconocida_tox).
+
+opcion_intoxicacion(2, 'Consciente y alerta',             consciente_tox).
+opcion_intoxicacion(2, 'Confundida o desorientada',       semi_consciente_tox).
+opcion_intoxicacion(2, 'Somnolenta o difícil de despertar', somnolenta_tox).
+opcion_intoxicacion(2, 'Inconsciente o no responde',      inconsciente_tox).
+
+opcion_intoxicacion(3, 'Hace menos de 1 hora',   tiempo_reciente_tox).
+opcion_intoxicacion(3, 'Entre 1 y 3 horas',      tiempo_moderado_tox).
+opcion_intoxicacion(3, 'Más de 3 horas',         tiempo_tardio_tox).
+opcion_intoxicacion(3, 'No sé cuándo ocurrió',   tiempo_desconocido_tox).
+
+opcion_intoxicacion(4, 'Náuseas o vómito',                    nauseas_tox).
+opcion_intoxicacion(4, 'Dificultad para respirar',            dificultad_respirar_tox).
+opcion_intoxicacion(4, 'Convulsiones',                        convulsiones_tox).
+opcion_intoxicacion(4, 'Quemaduras en boca o garganta',       quemaduras_internas_tox).
+opcion_intoxicacion(4, 'Dolor abdominal intenso',             dolor_abdominal_tox).
+opcion_intoxicacion(4, 'Sin síntomas claros por ahora',       sin_sintomas_tox).
+
+opcion_intoxicacion(5, 'Sí, sé exactamente qué fue',    sustancia_conocida_tox).
+opcion_intoxicacion(5, 'Tengo una idea aproximada',      sustancia_probable_tox).
+opcion_intoxicacion(5, 'No sé qué sustancia fue',       sustancia_desconocida_tox).
+
+sintoma_emergencia_intoxicacion(inconsciente_tox).
+sintoma_emergencia_intoxicacion(convulsiones_tox).
+sintoma_emergencia_intoxicacion(dificultad_respirar_tox).
+sintoma_emergencia_intoxicacion(quemaduras_internas_tox).
+
+respuestas_intoxicacion_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_intoxicacion(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_intoxicacion(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_intoxicacion(S), !.
+
+nivel_intoxicacion(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_intoxicacion(S), !.
+nivel_intoxicacion(moderada, Sintomas) :-
+    ( member(semi_consciente_tox, Sintomas)
+    ; member(somnolenta_tox, Sintomas)
+    ; member(ingestion_quimica, Sintomas)
+    ; member(ingestion_medicamentos, Sintomas)
+    ), !.
+nivel_intoxicacion(leve, _).
+
+diagnostico(intoxicacion, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_intoxicacion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_intoxicacion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_intoxicacion(moderada, Sintomas) -> Nivel = moderada
+    ;                                           Nivel = leve ),
+    ( hay_emergencia_intoxicacion(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato',
+            'Si está inconsciente y respira, coloca en posición lateral de seguridad',
+            'Si no respira, inicia RCP de inmediato',
+            'NO induzcas el vómito salvo indicación médica expresa',
+            'NO des nada por la boca mientras esté inconsciente',
+            'Lleva el envase o identifica la sustancia para informar a los médicos',
+            'Si fue inhalación, traslada a aire fresco de inmediato',
+            'Si fue contacto con piel, lava con agua abundante sin frotar'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Llama al Centro de Toxicología o a urgencias de inmediato',
+            'Identifica la sustancia y la cantidad aproximada ingerida',
+            'NO induzcas el vómito sin indicación médica',
+            'Mantén a la persona despierta y bajo vigilancia constante',
+            'Si ingirió medicamentos, guarda el frasco para mostrarlo al médico',
+            'Si hay vómito espontáneo, protege la vía aérea colocando de lado',
+            'Traslada a urgencias aunque los síntomas parezcan leves por ahora'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Llama a urgencias o al Centro de Toxicología para orientación',
+            'Identifica la sustancia y el tiempo transcurrido',
+            'Mantén a la persona en reposo y bajo observación',
+            'Si hay náuseas, ofrece pequeños sorbos de agua (solo si no fue sustancia química)',
+            'NO des leche ni carbón activado sin indicación médica',
+            'Traslada a urgencias si aparece cualquier síntoma nuevo'
+        ]
+    ).
+
+% ============================================================
+% MÓDULO: PICADURA / MORDEDURA
+% ============================================================
+
+pregunta(picadura, 1, 'Tipo de animal que causó la picadura o mordedura').
+pregunta(picadura, 2, 'Zona del cuerpo afectada').
+pregunta(picadura, 3, 'Síntomas que aparecieron').
+pregunta(picadura, 4, 'Antecedentes de alergia a picaduras o venenos').
+pregunta(picadura, 5, 'Tiempo transcurrido desde la picadura').
+
+total_preguntas(picadura, 5).
+
+opcion_picadura(1, 'Abeja, avispa o hormiga',  insecto_comun).
+opcion_picadura(1, 'Araña',                    arana).
+opcion_picadura(1, 'Serpiente',                serpiente).
+opcion_picadura(1, 'Escorpión o alacrán',      escorpion).
+opcion_picadura(1, 'Perro u otro mamífero',    mamifero).
+opcion_picadura(1, 'No lo identifiqué',        animal_desconocido).
+
+opcion_picadura(2, 'Cara o cuello',   zona_cara_cuello_pic).
+opcion_picadura(2, 'Brazo o pierna',  zona_extremidad_pic).
+opcion_picadura(2, 'Mano o pie',      zona_mano_pie_pic).
+opcion_picadura(2, 'Torso o espalda', zona_torso_pic).
+
+opcion_picadura(3, 'Solo dolor e inflamación local',             dolor_local_pic).
+opcion_picadura(3, 'Reacción alérgica: urticaria generalizada',  reaccion_alergica_pic).
+opcion_picadura(3, 'Dificultad para respirar o tragar',         dificultad_respirar_pic).
+opcion_picadura(3, 'Náuseas, mareo o debilidad general',        sintomas_sistemicos_pic).
+opcion_picadura(3, 'Entumecimiento que se extiende',            entumecimiento_pic).
+opcion_picadura(3, 'Herida profunda con sangrado',              herida_profunda_pic).
+
+opcion_picadura(4, 'Sí, tiene alergia conocida', alergia_conocida_pic).
+opcion_picadura(4, 'No tiene alergias',          sin_alergia_pic).
+opcion_picadura(4, 'No lo sé',                   alergia_desconocida_pic).
+
+opcion_picadura(5, 'Hace menos de 30 minutos', pic_reciente).
+opcion_picadura(5, 'Entre 30 min y 2 horas',   pic_moderada).
+opcion_picadura(5, 'Más de 2 horas',           pic_tardio).
+
+sintoma_emergencia_picadura(reaccion_alergica_pic).
+sintoma_emergencia_picadura(dificultad_respirar_pic).
+sintoma_emergencia_picadura(serpiente).
+sintoma_emergencia_picadura(escorpion).
+sintoma_emergencia_picadura(alergia_conocida_pic).
+
+respuestas_picadura_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_picadura(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_picadura(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_picadura(S), !.
+
+nivel_picadura(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_picadura(S), !.
+nivel_picadura(moderada, Sintomas) :-
+    ( member(mamifero, Sintomas)
+    ; member(sintomas_sistemicos_pic, Sintomas)
+    ; member(entumecimiento_pic, Sintomas)
+    ; member(herida_profunda_pic, Sintomas)
+    ; member(zona_cara_cuello_pic, Sintomas)
+    ), !.
+nivel_picadura(leve, _).
+
+diagnostico(picadura, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_picadura_a_sintomas(Respuestas, Sintomas),
+    ( nivel_picadura(grave, Sintomas)    -> Nivel = grave
+    ; nivel_picadura(moderada, Sintomas) -> Nivel = moderada
+    ;                                       Nivel = leve ),
+    ( hay_emergencia_picadura(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato',
+            'Si hay dificultad para respirar o anafilaxia: aplica adrenalina (EpiPen) si está disponible',
+            'Acuesta a la persona y eleva las piernas (excepto si hay dificultad respiratoria)',
+            'Si fue mordedura de serpiente: inmoviliza la extremidad por debajo del corazón',
+            'NO hagas torniquete, NO cortes la herida, NO intentes succionar el veneno',
+            'Si fue escorpión: traslada a urgencias aunque los síntomas sean leves',
+            'Retira anillos y pulseras en la zona antes de que aparezca la inflamación',
+            'Mantén a la persona calmada y quieta para reducir la circulación del veneno'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Lava la herida con agua y jabón abundante durante al menos 5 minutos',
+            'Traslada a urgencias para evaluación médica',
+            'Si fue mordedura de mamífero: es necesaria la evaluación para profilaxis antirrábica',
+            'Retira el aguijón si está presente raspando con una tarjeta, no con pinzas',
+            'Aplica hielo envuelto en tela durante 10-15 minutos',
+            'Observa síntomas de reacción alérgica durante las próximas horas'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Retira el aguijón si está presente raspando suavemente con una tarjeta',
+            'Lava la zona con agua y jabón',
+            'Aplica hielo envuelto en tela durante 10-15 minutos',
+            'Puedes aplicar crema con hidrocortisona o tomar un antihistamínico oral',
+            'Observa la zona durante las próximas horas por si aparece reacción alérgica',
+            'Consulta médico si la inflamación o el dolor aumentan significativamente'
+        ]
+    ).
+
+% ============================================================
+% MÓDULO: DESCARGA ELÉCTRICA
+% ============================================================
+
+pregunta(descarga, 1, 'Estado de contacto con la fuente eléctrica').
+pregunta(descarga, 2, 'Estado de consciencia y respiración').
+pregunta(descarga, 3, 'Tipo de corriente o fuente eléctrica').
+pregunta(descarga, 4, 'Quemaduras o marcas visibles').
+pregunta(descarga, 5, 'Síntomas adicionales').
+
+total_preguntas(descarga, 5).
+
+opcion_descarga(1, 'Sigue en contacto con la fuente eléctrica', sigue_en_contacto_desc).
+opcion_descarga(1, 'Ya no está en contacto',                    sin_contacto_desc).
+opcion_descarga(1, 'No estoy seguro',                           contacto_desconocido_desc).
+
+opcion_descarga(2, 'Consciente y alerta',           consciente_desc).
+opcion_descarga(2, 'Consciente pero confundida',    confundido_desc).
+opcion_descarga(2, 'Inconsciente pero respira',     inconsciente_desc).
+opcion_descarga(2, 'No respira o no tiene pulso',   sin_respiracion_desc).
+
+opcion_descarga(3, 'Corriente doméstica (110-220V)', corriente_baja_desc).
+opcion_descarga(3, 'Alta tensión o línea eléctrica', corriente_alta_desc).
+opcion_descarga(3, 'Rayo o relámpago',               rayo_desc).
+opcion_descarga(3, 'No lo sé',                       fuente_desconocida_desc).
+
+opcion_descarga(4, 'Quemaduras evidentes de entrada/salida', quemaduras_desc).
+opcion_descarga(4, 'Enrojecimiento o marcas leves',          marcas_leves_desc).
+opcion_descarga(4, 'Sin marcas visibles',                    sin_marcas_desc).
+
+opcion_descarga(5, 'Dolor en el pecho o palpitaciones',   dolor_pecho_desc).
+opcion_descarga(5, 'Convulsiones',                        convulsiones_desc).
+opcion_descarga(5, 'Parálisis o pérdida de sensibilidad', paralisis_desc).
+opcion_descarga(5, 'Solo dolor local en la zona',         dolor_local_desc).
+opcion_descarga(5, 'Sin síntomas adicionales',            sin_sintomas_desc).
+
+sintoma_emergencia_descarga(sigue_en_contacto_desc).
+sintoma_emergencia_descarga(inconsciente_desc).
+sintoma_emergencia_descarga(sin_respiracion_desc).
+sintoma_emergencia_descarga(corriente_alta_desc).
+sintoma_emergencia_descarga(rayo_desc).
+sintoma_emergencia_descarga(dolor_pecho_desc).
+sintoma_emergencia_descarga(convulsiones_desc).
+
+respuestas_descarga_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_descarga(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_descarga(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_descarga(S), !.
+
+nivel_descarga(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_descarga(S), !.
+nivel_descarga(moderada, Sintomas) :-
+    ( member(confundido_desc, Sintomas)
+    ; member(quemaduras_desc, Sintomas)
+    ; member(paralisis_desc, Sintomas)
+    ), !.
+nivel_descarga(leve, _).
+
+diagnostico(descarga, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_descarga_a_sintomas(Respuestas, Sintomas),
+    ( nivel_descarga(grave, Sintomas)    -> Nivel = grave
+    ; nivel_descarga(moderada, Sintomas) -> Nivel = moderada
+    ;                                       Nivel = leve ),
+    ( hay_emergencia_descarga(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato',
+            'NUNCA toques a la persona si aún está en contacto con la corriente',
+            'Corta la electricidad desde el interruptor general antes de acercarte',
+            'Si no puedes cortar la corriente, usa un objeto no conductor (madera seca) para alejar a la persona',
+            'Si no respira ni tiene pulso: inicia RCP de inmediato',
+            'Toda descarga eléctrica requiere evaluación médica urgente aunque la persona parezca estable',
+            'Las lesiones internas pueden ser graves aunque la piel no muestre marcas',
+            'NO muevas a la persona si sospechas lesión en columna'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Traslada a urgencias de inmediato para evaluación cardíaca',
+            'Toda descarga requiere monitoreo cardíaco aunque parezca leve',
+            'Cubre las quemaduras con gasa limpia y seca',
+            'NO apliques agua fría, hielo ni pomadas en quemaduras eléctricas',
+            'Mantén a la persona acostada y en reposo',
+            'Monitorea respiración y pulso constantemente',
+            'Los daños internos pueden ser mayores que los externos visibles'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Acude a urgencias para evaluación médica aunque te sientas bien',
+            'Las descargas pueden causar arritmias que aparecen horas después',
+            'Informa al médico del tipo de corriente y el tiempo de contacto',
+            'Observa palpitaciones, mareo, dolor de pecho o confusión',
+            'No conduzcas ni realices actividades físicas hasta recibir alta médica'
+        ]
+    ).
+
+% ============================================================
+% MÓDULO: INSOLACIÓN
+% ============================================================
+
+pregunta(insolacion, 1, 'Tiempo de exposición al calor o al sol').
+pregunta(insolacion, 2, 'Síntomas que presenta actualmente').
+pregunta(insolacion, 3, 'Estado de la piel').
+pregunta(insolacion, 4, 'Estado de consciencia').
+pregunta(insolacion, 5, 'Hidratación reciente').
+
+total_preguntas(insolacion, 5).
+
+opcion_insolacion(1, 'Menos de 1 hora',     exposicion_corta_insol).
+opcion_insolacion(1, 'Entre 1 y 3 horas',   exposicion_moderada_insol).
+opcion_insolacion(1, 'Más de 3 horas',      exposicion_prolongada_insol).
+opcion_insolacion(1, 'No estoy seguro',     exposicion_desconocida_insol).
+
+opcion_insolacion(2, 'Mareo y debilidad',                      mareo_insol).
+opcion_insolacion(2, 'Dolor de cabeza intenso',                cefalea_insol).
+opcion_insolacion(2, 'Náuseas o vómito',                       nauseas_insol).
+opcion_insolacion(2, 'Calambres musculares',                   calambres_insol).
+opcion_insolacion(2, 'Confusión o comportamiento extraño',     confusion_insol).
+opcion_insolacion(2, 'Pérdida de consciencia',                 desmayo_insol).
+
+opcion_insolacion(3, 'Piel muy caliente, seca, sin sudoración', piel_seca_caliente_insol).
+opcion_insolacion(3, 'Piel húmeda, pálida y fría al tacto',     piel_humeda_fria_insol).
+opcion_insolacion(3, 'Piel enrojecida con algo de sudoración',  piel_enrojecida_insol).
+opcion_insolacion(3, 'Sin cambios evidentes en la piel',        sin_cambios_piel_insol).
+
+opcion_insolacion(4, 'Consciente y orientada',           consciente_insol).
+opcion_insolacion(4, 'Confundida o desorientada',        confundida_insol).
+opcion_insolacion(4, 'Somnolenta, difícil de despertar', somnolenta_insol).
+opcion_insolacion(4, 'Inconsciente',                     inconsciente_insol).
+
+opcion_insolacion(5, 'Sí, ha bebido agua recientemente', hidratada_insol).
+opcion_insolacion(5, 'No ha bebido agua en horas',       deshidratada_insol).
+opcion_insolacion(5, 'No estoy seguro',                  hidratacion_desconocida_insol).
+
+sintoma_emergencia_insolacion(piel_seca_caliente_insol).
+sintoma_emergencia_insolacion(confusion_insol).
+sintoma_emergencia_insolacion(desmayo_insol).
+sintoma_emergencia_insolacion(inconsciente_insol).
+sintoma_emergencia_insolacion(confundida_insol).
+sintoma_emergencia_insolacion(somnolenta_insol).
+
+respuestas_insolacion_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_insolacion(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_insolacion(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_insolacion(S), !.
+
+nivel_insolacion(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_insolacion(S), !.
+nivel_insolacion(moderada, Sintomas) :-
+    ( member(exposicion_prolongada_insol, Sintomas)
+    ; member(deshidratada_insol, Sintomas)
+    ; member(nauseas_insol, Sintomas)
+    ; member(cefalea_insol, Sintomas)
+    ), !.
+nivel_insolacion(leve, _).
+
+diagnostico(insolacion, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_insolacion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_insolacion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_insolacion(moderada, Sintomas) -> Nivel = moderada
+    ;                                         Nivel = leve ),
+    ( hay_emergencia_insolacion(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato: el golpe de calor es una emergencia vital',
+            'Lleva a la persona a un lugar fresco y con sombra de inmediato',
+            'Enfría el cuerpo con todo lo disponible: agua fría, paños húmedos, abanico',
+            'Si está inconsciente, coloca en posición lateral de seguridad',
+            'Aplica agua fría en cuello, axilas e ingles para bajar la temperatura rápido',
+            'NO des líquidos por la boca si está inconsciente o muy confundida',
+            'Si está consciente y puede tragar, ofrece agua fría a pequeños sorbos',
+            'Continúa enfriando hasta que llegue la ayuda médica'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Retira a la persona del sol o calor de inmediato',
+            'Lleva a un lugar fresco, con sombra y ventilación',
+            'Afloja o retira ropa innecesaria',
+            'Ofrece agua fresca a sorbos pequeños y frecuentes',
+            'Aplica paños húmedos fríos en frente, cuello y muñecas',
+            'Recuéstala con las piernas ligeramente elevadas',
+            'Traslada a urgencias si no mejora en 30 minutos o los síntomas empeoran'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Busca un lugar fresco y con sombra de inmediato',
+            'Bebe agua fresca a sorbos moderados, no de golpe',
+            'Descansa y evita la exposición solar al menos 2 horas',
+            'Aplica un paño húmedo frío en la frente y cuello',
+            'Evita bebidas con cafeína o alcohol',
+            'Si los síntomas no mejoran en 1 hora, busca atención médica'
+        ]
+    ).
+
+% ============================================================
+% MÓDULO: CONVULSIONES
+% ============================================================
+
+pregunta(convulsion, 1, 'Estado actual de la convulsión').
+pregunta(convulsion, 2, 'Duración de la convulsión').
+pregunta(convulsion, 3, 'Antecedentes de epilepsia o convulsiones previas').
+pregunta(convulsion, 4, 'Estado posterior a la convulsión').
+pregunta(convulsion, 5, 'Causa aparente de la convulsión').
+
+total_preguntas(convulsion, 5).
+
+opcion_convulsion(1, 'Sigue convulsionando ahora mismo',       convulsionando_ahora).
+opcion_convulsion(1, 'La convulsión ya terminó',               convulsion_terminada).
+opcion_convulsion(1, 'No estoy seguro si fue convulsión',      convulsion_dudosa).
+
+opcion_convulsion(2, 'Menos de 2 minutos',   conv_menos_2min).
+opcion_convulsion(2, 'Entre 2 y 5 minutos',  conv_entre_2y5min).
+opcion_convulsion(2, 'Más de 5 minutos',     conv_mas_5min).
+opcion_convulsion(2, 'No sé cuánto duró',    conv_tiempo_desconocido).
+
+opcion_convulsion(3, 'Sí, tiene epilepsia diagnosticada', epileptico_conv).
+opcion_convulsion(3, 'Sí, ha tenido convulsiones antes',  antecedentes_conv).
+opcion_convulsion(3, 'No, es la primera vez',             primera_vez_conv).
+opcion_convulsion(3, 'No lo sé',                          antecedentes_desconocidos_conv).
+
+opcion_convulsion(4, 'Se recuperó y está consciente',   recuperado_conv).
+opcion_convulsion(4, 'Está somnolenta y confundida',    post_ictal_conv).
+opcion_convulsion(4, 'Inconsciente, no responde',       inconsciente_conv).
+opcion_convulsion(4, 'Tuvo otra convulsión seguida',    convulsiones_repetidas_conv).
+
+opcion_convulsion(5, 'Fiebre muy alta',                  conv_fiebre).
+opcion_convulsion(5, 'Golpe o trauma en la cabeza',      conv_trauma).
+opcion_convulsion(5, 'Intoxicación o sustancia conocida', conv_intoxicacion).
+opcion_convulsion(5, 'Embarazo',                         conv_embarazo).
+opcion_convulsion(5, 'Sin causa aparente',               sin_causa_conv).
+
+sintoma_emergencia_convulsion(conv_mas_5min).
+sintoma_emergencia_convulsion(inconsciente_conv).
+sintoma_emergencia_convulsion(convulsiones_repetidas_conv).
+sintoma_emergencia_convulsion(conv_trauma).
+sintoma_emergencia_convulsion(conv_embarazo).
+sintoma_emergencia_convulsion(primera_vez_conv).
+sintoma_emergencia_convulsion(conv_intoxicacion).
+
+respuestas_convulsion_a_sintomas(Respuestas, Sintomas) :-
+    findall(Sint,
+        ( nth1(Idx, Respuestas, R),
+          ( string(R) -> atom_string(RAtom, R) ; RAtom = R ),
+          opcion_convulsion(Idx, RAtom, Sint)
+        ),
+        Sintomas).
+
+hay_emergencia_convulsion(Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_convulsion(S), !.
+
+nivel_convulsion(grave, Sintomas) :-
+    member(S, Sintomas), sintoma_emergencia_convulsion(S), !.
+nivel_convulsion(moderada, Sintomas) :-
+    ( member(convulsionando_ahora, Sintomas)
+    ; member(post_ictal_conv, Sintomas)
+    ; member(conv_fiebre, Sintomas)
+    ), !.
+nivel_convulsion(leve, _).
+
+diagnostico(convulsion, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
+    respuestas_convulsion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_convulsion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_convulsion(moderada, Sintomas) -> Nivel = moderada
+    ;                                         Nivel = leve ),
+    ( hay_emergencia_convulsion(Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    ( Nivel = grave ->
+        Severidad = high,
+        Recomendaciones = [
+            'Llama al 911 de inmediato',
+            'Protege la cabeza: coloca algo suave debajo (ropa doblada)',
+            'Despeja el área: aleja objetos duros o cortantes',
+            'NO introduzcas nada en la boca, NO sostengas a la persona con fuerza',
+            'NO intentes sujetar las extremidades ni detener los movimientos convulsivos',
+            'Si la convulsión dura más de 5 minutos, es una emergencia neurológica crítica',
+            'Al terminar, coloca en posición lateral de seguridad para evitar aspiración',
+            'Anota la duración y las características para informar al médico'
+        ]
+    ; Nivel = moderada ->
+        Severidad = medium,
+        Recomendaciones = [
+            'Protege a la persona de golpearse durante la convulsión',
+            'Coloca algo suave bajo la cabeza y despeja el área',
+            'Cronometra la duración: si supera 5 minutos, llama al 911',
+            'Al terminar, coloca en posición lateral de seguridad',
+            'Habla con calma cuando recupere la consciencia: puede estar confundida',
+            'Traslada a urgencias para evaluación, especialmente si fue por fiebre alta',
+            'NO ofrezcas agua ni alimentos hasta que esté completamente alerta'
+        ]
+    ;
+        Severidad = low,
+        Recomendaciones = [
+            'Si es epiléptico conocido y la convulsión fue breve, observa la recuperación',
+            'Coloca en posición lateral de seguridad tras la convulsión',
+            'Deja que descanse en un lugar tranquilo y seguro',
+            'No dejes sola a la persona durante al menos 30 minutos',
+            'Ofrece agua y tranquilidad cuando esté completamente alerta',
+            'Comunica el episodio al médico tratante en las próximas horas',
+            'Llama al 911 si hay segunda convulsión, dificultad respiratoria o no recupera la consciencia'
+        ]
+    ).
     
 % ============================================================
 % LÓGICA DE SESIONES

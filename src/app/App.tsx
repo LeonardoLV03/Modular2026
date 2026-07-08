@@ -3,7 +3,10 @@ import { Sidebar } from './components/Sidebar';
 import { ChatInterface } from './components/ChatInterface';
 import { WelcomePanel } from './components/WelcomePanel';
 
-export type Module = 'desmayo' | 'hemorragia' | 'asfixia' | 'quemadura' | null;
+export type Module =
+  | 'desmayo' | 'hemorragia' | 'asfixia' | 'quemadura'
+  | 'fractura' | 'intoxicacion' | 'picadura' | 'descarga' | 'insolacion' | 'convulsion'
+  | null;
 
 export default function App() {
   const [selectedModule, setSelectedModule] = useState<Module>(null);

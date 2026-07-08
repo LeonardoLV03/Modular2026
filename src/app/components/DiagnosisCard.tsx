@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { CheckCircle, AlertCircle, Heart, Droplet, Wind, Flame, RotateCcw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Heart, Droplet, Wind, Flame, RotateCcw, FlaskConical, Bug, Zap, Sun, Brain} from 'lucide-react';
 import { Module } from '../App';
 import { DiagnosisResponse } from '../services/prologApi';
 
@@ -73,7 +73,77 @@ export function DiagnosisCard({ module, onNewConsultation, customRecommendations
         'No revientes las ampollas',
         'Si es mayor que tu mano, llama al 911'
       ]
-    }
+    },
+     intoxicacion: {
+      icon: FlaskConical,
+      gradient: 'from-emerald-500 to-emerald-600',
+      bgColor: 'bg-emerald-50',
+      caseLabel: 'Tipo de intoxicacion',
+      recommendations: [
+        'Llama al 911 o al centro de toxicología inmediatamente',
+        'No provoques el vómito a menos que un profesional lo indique',
+        'Aleja a la persona de la fuente (ej. si es gas, llévala al aire libre)',
+        'Si está inconsciente pero respira, colócala de lado (posición de recuperación)',
+        'No le des nada de comer ni beber (ni leche, ni agua, ni remedios caseros)',
+        'Guarda el envase o restos de la sustancia tóxica para el médico'
+      ]
+    },
+      picadura: {
+      icon: Bug,
+      gradient: 'from-slate-900 to-purple-900',
+      bgColor: 'bg-slate-50',
+      caseLabel: 'Tipo de picadura',
+      recommendations: [
+        'Llama al 911 o al centro de toxicología inmediatamente',
+        'No provoques el vómito a menos que un profesional lo indique',
+        'Aleja a la persona de la fuente (ej. si es gas, llévala al aire libre)',
+        'Si está inconsciente pero respira, colócala de lado (posición de recuperación)',
+        'No le des nada de comer ni beber (ni leche, ni agua, ni remedios caseros)',
+        'Guarda el envase o restos de la sustancia tóxica para el médico'
+      ]
+    },
+    descarga: {
+      icon: Zap,
+      gradient: 'from-slate-900 to-purple-900',
+      bgColor: 'bg-slate-50',
+      caseLabel: 'Tipo de descarga',
+      recommendations: [
+        'Llama al 911 o al centro de toxicología inmediatamente',
+        'No provoques el vómito a menos que un profesional lo indique',
+        'Aleja a la persona de la fuente (ej. si es gas, llévala al aire libre)',
+        'Si está inconsciente pero respira, colócala de lado (posición de recuperación)',
+        'No le des nada de comer ni beber (ni leche, ni agua, ni remedios caseros)',
+        'Guarda el envase o restos de la sustancia tóxica para el médico'
+      ]
+    },
+    insolacion: {
+      icon: Sun,
+      gradient: 'from-red-500 to-orange-500',
+      bgColor: 'bg-red-50',
+      caseLabel: 'Tipo de insolacion',
+      recommendations: [
+        'Llama al 911 o al centro de toxicología inmediatamente',
+        'No provoques el vómito a menos que un profesional lo indique',
+        'Aleja a la persona de la fuente (ej. si es gas, llévala al aire libre)',
+        'Si está inconsciente pero respira, colócala de lado (posición de recuperación)',
+        'No le des nada de comer ni beber (ni leche, ni agua, ni remedios caseros)',
+        'Guarda el envase o restos de la sustancia tóxica para el médico'
+      ]
+    },
+    convulsion: {
+      icon: Brain,
+      gradient: 'from-indigo-500 to-indigo-600',
+      bgColor: 'bg-indigo-50',
+      caseLabel: 'Tipo de convulsion',
+      recommendations: [
+        'Llama al 911 o al centro de toxicología inmediatamente',
+        'No provoques el vómito a menos que un profesional lo indique',
+        'Aleja a la persona de la fuente (ej. si es gas, llévala al aire libre)',
+        'Si está inconsciente pero respira, colócala de lado (posición de recuperación)',
+        'No le des nada de comer ni beber (ni leche, ni agua, ni remedios caseros)',
+        'Guarda el envase o restos de la sustancia tóxica para el médico'
+      ]
+    },
   };
 
   const data = moduleData[module!];
