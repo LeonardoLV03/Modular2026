@@ -1383,14 +1383,17 @@ h_end(Request) :-
 server(Port) :-
     http_server(http_dispatch, [port(Port)]).
 
-:- initialization(main, main).
-main :-
-    set_prolog_flag(encoding, utf8),
-    ( getenv('PORT', PortStr) ->
-        atom_number(PortStr, Port)
-    ;
-        Port = 5000
+:- initialization(start, start).
+start :-
+    % 1. Leer el puerto asignado por Railway o usar 8000 en local
+    (   getenv('PORT', PortAtom)
+    ->  atom_number(PortAtom, Port)
+    ;   Port = 8000 
     ),
-    server(Port),
-    format("Servidor iniciado en puerto ~w~n", [Port]),
+    
+    % 2. Iniciar el servidor
+    http_server(http_dispatch, [port(Port)]),
+    
+    % 3. CRÍTICO: Evitar que el hilo principal termine. 
+    % Si esto no está, Railway apagará tu servidor instantáneamente.
     thread_get_message(_).
