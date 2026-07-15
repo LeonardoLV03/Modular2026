@@ -1386,6 +1386,11 @@ server(Port) :-
 :- initialization(main, main).
 main :-
     set_prolog_flag(encoding, utf8),
-    server(5000),
-    format("Servidor iniciado en http://localhost:5000~n"),
+    ( getenv('PORT', PortStr) ->
+        atom_number(PortStr, Port)
+    ;
+        Port = 5000
+    ),
+    server(Port),
+    format("Servidor iniciado en puerto ~w~n", [Port]),
     thread_get_message(_).

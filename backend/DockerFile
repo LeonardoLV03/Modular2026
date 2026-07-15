@@ -1,0 +1,14 @@
+# Usa la imagen oficial de SWI-Prolog
+FROM swipl:latest
+
+# Establece el directorio de trabajo dentro del contenedor
+WORKDIR /app
+
+# Copia los archivos de tu proyecto al contenedor
+COPY . /app
+
+# Expón el puerto que usa tu servidor (Cámbialo si tu app usa otro)
+EXPOSE 8080
+
+# Comando para iniciar tu servidor
+CMD ["swipl", "-s", "server.pl", "-g", "server", "-t", "halt"]
