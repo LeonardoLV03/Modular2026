@@ -369,10 +369,10 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
           animate={{ scale: 1 }}
           className="px-4 pb-4"
         >
-          
+          <a>
             href="tel:911"
             className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white py-4 rounded-full shadow-lg text-xl transition-colors"
-          <a>
+
             <Phone size={24} />
             LLAMAR AL 911
           </a>
