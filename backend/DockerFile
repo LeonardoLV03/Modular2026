@@ -1,11 +1,11 @@
-# Usar la imagen oficial de SWI-Prolog
-FROM swipl:latest
+FROM swipl:stable
 
-# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar todos los archivos de tu proyecto
-COPY . /app
+COPY server.pl .
 
-# Comando de inicio (asegúrate de cambiar "tu_archivo.pl" por el nombre real)
-CMD ["swipl", "-s", "server.pl", "-g", "start"]
+ENV PORT=5000
+
+EXPOSE ${PORT}
+
+CMD ["swipl", "server.pl"]
