@@ -19,7 +19,6 @@ interface ChatInterfaceProps {
   onReset: () => void;
 }
 
-// ── Etiquetas para mostrar en UI ─────────────────────────────
 const MODULE_LABELS: Record<string, string> = {
   desmayo:     'Desmayo',
   hemorragia:  'Hemorragia',
@@ -33,7 +32,6 @@ const MODULE_LABELS: Record<string, string> = {
   convulsion:  'Convulsión',
 };
 
-// ── Colores por módulo ────────────────────────────────────────
 const MODULE_COLORS: Record<string, { gradient: string; light: string }> = {
   desmayo:     { gradient: 'from-violet-400 to-violet-500', light: 'bg-violet-50'  },
   hemorragia:  { gradient: 'from-rose-500 to-pink-500',     light: 'bg-rose-50'    },
@@ -41,13 +39,12 @@ const MODULE_COLORS: Record<string, { gradient: string; light: string }> = {
   quemadura:   { gradient: 'from-amber-500 to-orange-500',  light: 'bg-amber-50'   },
   fractura:    { gradient: 'from-sky-500 to-sky-600',       light: 'bg-sky-50'     },
   intoxicacion:{ gradient: 'from-emerald-500 to-emerald-600', light: 'bg-emerald-50'},
-  picadura:    { gradient: 'from-slate-900 to-purple-900',     light: 'bg-slate-50'    },
+  picadura:    { gradient: 'from-teal-500 to-teal-700',     light: 'bg-teal-50'    },
   descarga:    { gradient: 'from-yellow-500 to-yellow-600', light: 'bg-yellow-50'  },
   insolacion:  { gradient: 'from-red-500 to-orange-500',    light: 'bg-red-50'     },
   convulsion:  { gradient: 'from-indigo-500 to-indigo-600', light: 'bg-indigo-50'  },
 };
 
-// ── Opciones rápidas ──────────────────────────────────────────
 const QUICK_REPLIES = ['Sí', 'No', 'No estoy seguro'];
 
 const DESMAYO_OPTIONS: Record<number, string[]> = {
@@ -129,7 +126,6 @@ const CONVULSION_OPTIONS: Record<number, string[]> = {
   5: ['Fiebre muy alta', 'Golpe o trauma en la cabeza', 'Intoxicación o sustancia conocida', 'Embarazo', 'Sin causa aparente'],
 };
 
-// ── Componente ────────────────────────────────────────────────
 export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const [messages, setMessages]               = useState<Message[]>([]);
   const [input, setInput]                     = useState('');
@@ -144,7 +140,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const msgId          = useRef(0);
 
-  const label       = MODULE_LABELS[module!] ?? module ?? '';
+  const label        = MODULE_LABELS[module!] ?? module ?? '';
   const currentColor = MODULE_COLORS[module!] ?? MODULE_COLORS['desmayo'];
 
   const scrollToBottom = () => {
@@ -174,7 +170,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         addMessage(false, `Pregunta 1 de ${data.totalQuestions}:`, true);
         addMessage(false, data.firstQuestion, true);
       } catch {
-        addMessage(false, 'No se pudo conectar con el servidor Prolog. Verifica que esté corriendo en localhost:5000', false);
+        addMessage(false, 'No se pudo conectar con el servidor. Verifica la conexión.', false);
       } finally {
         setIsLoading(false);
       }
@@ -248,16 +244,16 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const getQuickOptions = (): string[] => {
     const m = module!;
     const q = currentQuestion;
-    if (m === 'desmayo'     && DESMAYO_OPTIONS[q])     return DESMAYO_OPTIONS[q];
-    if (m === 'hemorragia'  && HEMORRAGIA_OPTIONS[q])  return HEMORRAGIA_OPTIONS[q];
-    if (m === 'asfixia'     && ASFIXIA_OPTIONS[q])     return ASFIXIA_OPTIONS[q];
-    if (m === 'quemadura'   && QUEMADURA_OPTIONS[q])   return QUEMADURA_OPTIONS[q];
-    if (m === 'fractura'    && FRACTURA_OPTIONS[q])    return FRACTURA_OPTIONS[q];
-    if (m === 'intoxicacion'&& INTOXICACION_OPTIONS[q])return INTOXICACION_OPTIONS[q];
-    if (m === 'picadura'    && PICADURA_OPTIONS[q])    return PICADURA_OPTIONS[q];
-    if (m === 'descarga'    && DESCARGA_OPTIONS[q])    return DESCARGA_OPTIONS[q];
-    if (m === 'insolacion'  && INSOLACION_OPTIONS[q])  return INSOLACION_OPTIONS[q];
-    if (m === 'convulsion'  && CONVULSION_OPTIONS[q])  return CONVULSION_OPTIONS[q];
+    if (m === 'desmayo'      && DESMAYO_OPTIONS[q])      return DESMAYO_OPTIONS[q];
+    if (m === 'hemorragia'   && HEMORRAGIA_OPTIONS[q])   return HEMORRAGIA_OPTIONS[q];
+    if (m === 'asfixia'      && ASFIXIA_OPTIONS[q])      return ASFIXIA_OPTIONS[q];
+    if (m === 'quemadura'    && QUEMADURA_OPTIONS[q])    return QUEMADURA_OPTIONS[q];
+    if (m === 'fractura'     && FRACTURA_OPTIONS[q])     return FRACTURA_OPTIONS[q];
+    if (m === 'intoxicacion' && INTOXICACION_OPTIONS[q]) return INTOXICACION_OPTIONS[q];
+    if (m === 'picadura'     && PICADURA_OPTIONS[q])     return PICADURA_OPTIONS[q];
+    if (m === 'descarga'     && DESCARGA_OPTIONS[q])     return DESCARGA_OPTIONS[q];
+    if (m === 'insolacion'   && INSOLACION_OPTIONS[q])   return INSOLACION_OPTIONS[q];
+    if (m === 'convulsion'   && CONVULSION_OPTIONS[q])   return CONVULSION_OPTIONS[q];
     return QUICK_REPLIES;
   };
 
@@ -369,10 +365,10 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
           animate={{ scale: 1 }}
           className="px-4 pb-4"
         >
-          <a>
+          <a
             href="tel:911"
             className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-700 text-white py-4 rounded-full shadow-lg text-xl transition-colors"
-
+          >
             <Phone size={24} />
             LLAMAR AL 911
           </a>
