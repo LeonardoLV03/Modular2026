@@ -6,6 +6,7 @@ import { ChatMessage } from './ChatMessage';
 import { DiagnosisCard } from './DiagnosisCard';
 import { EmergencyAlert } from './EmergencyAlert';
 import * as PrologAPI from '../services/prologApi';
+import * as StatsAPI from '../services/statsApi';
 
 interface Message {
   id: number;
@@ -199,6 +200,16 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
       setDiagnosisData(diagnosis);
       setShowDiagnosis(true);
       setIsEmergency(diagnosis.isEmergency);
+
+      // Guardar en MongoDB (no bloquea la UI si falla)
+      StatsAPI.saveConsultation({
+        module: module!,
+        severity: diagnosis.severity,
+        isEmergency: diagnosis.isEmergency,
+        answers: answersList,
+        recommendations: diagnosis.recommendations || [],
+        sessionId: sessionId!,
+      }).catch(() => {});
     } catch {
       addMessage(false, 'Error al obtener el diagnóstico. Intenta de nuevo.', false);
     }
