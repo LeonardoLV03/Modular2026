@@ -3,39 +3,58 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { MongoClient } = require('mongodb');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// ── Seguridad: cabeceras HTTP ────────────────────────────────
-app.use(helmet());
-
-// ── Seguridad: CORS ──────────────────────────────────────────
+// ── CORS ─────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (origin.endsWith('.vercel.app')) return true;
+  return allowedOrigins.some(o => origin.startsWith(o.replace(/\/$/, '')));
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(o => origin.startsWith(o.replace(/\/$/, '')))) {
-      return callback(null, true);
-    }
-    // En producción permitir dominios de Vercel
-    if (origin.endsWith('.vercel.app')) return callback(null, true);
+    if (isOriginAllowed(origin)) return callback(null, true);
     callback(new Error('CORS no permitido'));
   }
 }));
 
-// Limitar tamaño del body
+// ── Socket.io ─────────────────────────────────────────────────
+const io = new Server(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) return callback(null, true);
+      callback(new Error('CORS no permitido'));
+    },
+    methods: ['GET', 'POST']
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`Cliente conectado: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`Cliente desconectado: ${socket.id}`);
+  });
+});
+
+// ── Seguridad ────────────────────────────────────────────────
+app.use(helmet());
 app.use(express.json({ limit: '10kb' }));
 
-// ── Seguridad: Rate limiting ─────────────────────────────────
 const generalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minuto
+  windowMs: 1 * 60 * 1000,
   max: 60,
   message: { error: 'Demasiadas peticiones. Intenta en 1 minuto.' },
   standardHeaders: true,
@@ -50,7 +69,7 @@ const saveLimiter = rateLimit({
 
 app.use(generalLimiter);
 
-// ── Validación de entrada ────────────────────────────────────
+// ── Validación ───────────────────────────────────────────────
 const VALID_MODULES = [
   'desmayo', 'hemorragia', 'asfixia', 'quemadura',
   'fractura', 'intoxicacion', 'picadura', 'descarga',
@@ -61,23 +80,47 @@ const VALID_SEVERITIES = ['high', 'medium', 'low'];
 
 function validateConsultation(data) {
   const errors = [];
-
   if (!data.module || !VALID_MODULES.includes(data.module))
     errors.push('Módulo inválido');
-
   if (!data.severity || !VALID_SEVERITIES.includes(data.severity))
     errors.push('Severidad inválida');
-
   if (typeof data.isEmergency !== 'boolean')
     errors.push('isEmergency debe ser booleano');
-
   if (!Array.isArray(data.answers) || data.answers.length > 10)
     errors.push('Respuestas inválidas (máx 10)');
-
   if (!Array.isArray(data.recommendations) || data.recommendations.length > 20)
     errors.push('Recomendaciones inválidas (máx 20)');
-
   return errors;
+}
+
+// ── Helpers de estadísticas ──────────────────────────────────
+async function buildStats(collection) {
+  const consultations = await collection.find({}).toArray();
+  const total = consultations.length;
+
+  const byModule = {};
+  consultations.forEach(c => {
+    byModule[c.module] = (byModule[c.module] || 0) + 1;
+  });
+
+  const bySeverity = { high: 0, medium: 0, low: 0 };
+  consultations.forEach(c => {
+    if (c.severity) bySeverity[c.severity] = (bySeverity[c.severity] || 0) + 1;
+  });
+
+  const emergencies = consultations.filter(c => c.isEmergency).length;
+
+  const byDate = {};
+  consultations.forEach(c => {
+    const date = new Date(c.timestamp).toLocaleDateString('es-MX');
+    byDate[date] = (byDate[date] || 0) + 1;
+  });
+
+  const recentConsultations = consultations
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 15);
+
+  return { total, byModule, bySeverity, emergencies, byDate, recentConsultations };
 }
 
 let db;
@@ -91,7 +134,7 @@ async function connectDB() {
 
 // ── Rutas ────────────────────────────────────────────────────
 
-// Guardar consulta
+// Guardar consulta — emite evento en tiempo real
 app.post('/api/consultations', saveLimiter, async (req, res) => {
   try {
     const errors = validateConsultation(req.body);
@@ -112,6 +155,19 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
     };
 
     const result = await db.collection('consultations').insertOne(record);
+
+    // Emitir stats actualizadas a todos los clientes conectados
+    const updatedStats = await buildStats(db.collection('consultations'));
+    io.emit('stats_updated', updatedStats);
+
+    // Emitir también la consulta nueva para notificación
+    io.emit('new_consultation', {
+      module: record.module,
+      severity: record.severity,
+      isEmergency: record.isEmergency,
+      timestamp: record.timestamp,
+    });
+
     res.json({ success: true, id: result.insertedId });
   } catch (error) {
     console.error('Error guardando consulta:', error.message);
@@ -122,32 +178,8 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
 // Estadísticas
 app.get('/api/stats', async (req, res) => {
   try {
-    const consultations = await db.collection('consultations').find({}).toArray();
-    const total = consultations.length;
-
-    const byModule = {};
-    consultations.forEach(c => {
-      byModule[c.module] = (byModule[c.module] || 0) + 1;
-    });
-
-    const bySeverity = { high: 0, medium: 0, low: 0 };
-    consultations.forEach(c => {
-      if (c.severity) bySeverity[c.severity] = (bySeverity[c.severity] || 0) + 1;
-    });
-
-    const emergencies = consultations.filter(c => c.isEmergency).length;
-
-    const byDate = {};
-    consultations.forEach(c => {
-      const date = new Date(c.timestamp).toLocaleDateString('es-MX');
-      byDate[date] = (byDate[date] || 0) + 1;
-    });
-
-    const recentConsultations = consultations
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 15);
-
-    res.json({ total, byModule, bySeverity, emergencies, byDate, recentConsultations });
+    const stats = await buildStats(db.collection('consultations'));
+    res.json(stats);
   } catch (error) {
     console.error('Error obteniendo stats:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -184,8 +216,9 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
+// ── Arrancar servidor ────────────────────────────────────────
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Stats API corriendo en puerto ${PORT}`);
+  httpServer.listen(PORT, () => {
+    console.log(`Stats API + Socket.io corriendo en puerto ${PORT}`);
   });
 }).catch(console.error);

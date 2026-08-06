@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { BarChart3 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { BarChart3, Wifi, WifiOff } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
 import * as StatsAPI from '../services/statsApi';
+
+const STATS_URL = import.meta.env.VITE_STATS_URL ?? 'http://localhost:3001';
 
 const MODULE_LABELS: Record<string, string> = {
   desmayo: 'Desmayo', hemorragia: 'Hemorragia', asfixia: 'Asfixia',
@@ -17,16 +20,72 @@ const MODULE_COLORS: Record<string, string> = {
   convulsion: '#6366f1',
 };
 
-export function StatsPanel() {
-  const [stats, setStats] = useState<StatsAPI.StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+interface Notification {
+  id: number;
+  module: string;
+  severity: string;
+  isEmergency: boolean;
+}
 
+export function StatsPanel() {
+  const [stats, setStats]               = useState<StatsAPI.StatsData | null>(null);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(false);
+  const [connected, setConnected]       = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const socketRef = useRef<Socket | null>(null);
+  const notifId   = useRef(0);
+
+  // Carga inicial de stats
   useEffect(() => {
     StatsAPI.getStats()
       .then(setStats)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+  }, []);
+
+  // Conexión Socket.io
+  useEffect(() => {
+    const socket = io(STATS_URL, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      setConnected(false);
+    });
+
+    // Actualización de stats en tiempo real
+    socket.on('stats_updated', (updatedStats: StatsAPI.StatsData) => {
+      setStats(updatedStats);
+    });
+
+    // Notificación de nueva consulta
+    socket.on('new_consultation', (data: any) => {
+      notifId.current += 1;
+      const id = notifId.current;
+
+      setNotifications(prev => [...prev, {
+        id,
+        module:      data.module,
+        severity:    data.severity,
+        isEmergency: data.isEmergency,
+      }]);
+
+      // Eliminar notificación después de 4 segundos
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 4000);
+    });
+
+    return () => { socket.disconnect(); };
   }, []);
 
   if (loading) return (
@@ -44,28 +103,68 @@ export function StatsPanel() {
   const maxModule = Math.max(...Object.values(stats.byModule), 1);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-gray-50">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-gray-50">
+
+      {/* Notificaciones en tiempo real */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 w-64">
+        <AnimatePresence>
+          {notifications.map(n => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, x: 60 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 60 }}
+              className="bg-white rounded-2xl shadow-lg p-3 border-l-4 flex items-start gap-2"
+              style={{ borderLeftColor: n.isEmergency ? '#ef4444' : '#10b981' }}
+            >
+              <span className="text-lg">{n.isEmergency ? '🚨' : '✅'}</span>
+              <div>
+                <p className="text-xs font-semibold text-gray-800">Nueva consulta</p>
+                <p className="text-xs text-gray-500">
+                  {MODULE_LABELS[n.module] ?? n.module} —{' '}
+                  {n.severity === 'high' ? 'Severa' : n.severity === 'medium' ? 'Moderada' : 'Leve'}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       {/* Header */}
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-            <BarChart3 size={22} className="text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+              <BarChart3 size={22} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl text-white">Estadísticas de Uso</h2>
+              <p className="text-sm text-white/60">Panel de análisis del sistema</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl text-white">Estadísticas de Uso</h2>
-            <p className="text-sm text-white/60">Panel de análisis del sistema</p>
+
+          {/* Indicador de conexión en tiempo real */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+            connected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-gray-500/20 text-gray-400'
+          }`}>
+            {connected
+              ? <><Wifi size={12} /> En vivo</>
+              : <><WifiOff size={12} /> Desconectado</>
+            }
           </div>
         </div>
       </div>
 
-      <div className="p-6 space-y-5">
+      {/* Contenido scrolleable */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
         {/* Tarjetas resumen */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: 'Total Consultas', value: stats.total, color: 'text-gray-900' },
-            { label: 'Emergencias', value: stats.emergencies, color: 'text-red-600' },
-            { label: 'Severidad Alta', value: stats.bySeverity.high || 0, color: 'text-orange-500' },
-            { label: 'Casos Leves', value: stats.bySeverity.low || 0, color: 'text-emerald-500' },
+            { label: 'Total Consultas', value: stats.total,                          color: 'text-gray-900'    },
+            { label: 'Emergencias',     value: stats.emergencies,                    color: 'text-red-600'     },
+            { label: 'Severidad Alta',  value: stats.bySeverity.high   || 0,         color: 'text-orange-500'  },
+            { label: 'Casos Leves',     value: stats.bySeverity.low    || 0,         color: 'text-emerald-500' },
           ].map((card, i) => (
             <motion.div
               key={card.label}
@@ -75,7 +174,15 @@ export function StatsPanel() {
               className="bg-white rounded-2xl p-4 shadow-sm"
             >
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{card.label}</p>
-              <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
+              <motion.p
+                key={card.value}
+                initial={{ scale: 1.2, color: '#6366f1' }}
+                animate={{ scale: 1,   color: '#111827' }}
+                transition={{ duration: 0.3 }}
+                className={`text-3xl font-bold ${card.color}`}
+              >
+                {card.value}
+              </motion.p>
             </motion.div>
           ))}
         </div>
@@ -97,7 +204,7 @@ export function StatsPanel() {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(count / maxModule) * 100}%` }}
-                      transition={{ delay: 0.2 + i * 0.05, duration: 0.5 }}
+                      transition={{ duration: 0.5 }}
                       className="h-2 rounded-full"
                       style={{ background: MODULE_COLORS[module] ?? '#888' }}
                     />
@@ -129,9 +236,8 @@ export function StatsPanel() {
                     <span className="w-20 text-sm text-gray-600">{label}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-2">
                       <motion.div
-                        initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
+                        transition={{ duration: 0.4 }}
                         className="h-2 rounded-full"
                         style={{ background: color }}
                       />
@@ -151,14 +257,26 @@ export function StatsPanel() {
             </h3>
             <div className="flex items-center justify-center gap-10 py-3">
               <div className="text-center">
-                <p className="text-4xl font-bold text-red-500">{stats.emergencies}</p>
+                <motion.p
+                  key={stats.emergencies}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  className="text-4xl font-bold text-red-500"
+                >
+                  {stats.emergencies}
+                </motion.p>
                 <p className="text-xs text-gray-400 mt-1">Emergencias</p>
               </div>
               <div className="h-12 w-px bg-gray-200" />
               <div className="text-center">
-                <p className="text-4xl font-bold text-emerald-500">
+                <motion.p
+                  key={stats.total - stats.emergencies}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  className="text-4xl font-bold text-emerald-500"
+                >
                   {stats.total - stats.emergencies}
-                </p>
+                </motion.p>
                 <p className="text-xs text-gray-400 mt-1">No emergencias</p>
               </div>
             </div>
@@ -182,25 +300,33 @@ export function StatsPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {stats.recentConsultations.map((c, i) => (
-                  <tr key={i} className="text-gray-700">
-                    <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
-                    <td className="py-2 pr-4">{MODULE_LABELS[c.module] ?? c.module}</td>
-                    <td className="py-2 pr-4">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        c.severity === 'high'   ? 'bg-red-100 text-red-700' :
-                        c.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                                  'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        {c.severity === 'high' ? 'Alta' : c.severity === 'medium' ? 'Moderada' : 'Leve'}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4">{c.isEmergency ? '🔴 Sí' : '🟢 No'}</td>
-                    <td className="py-2 text-gray-400 text-xs">
-                      {new Date(c.timestamp).toLocaleDateString('es-MX')}
-                    </td>
-                  </tr>
-                ))}
+                <AnimatePresence>
+                  {stats.recentConsultations.map((c, i) => (
+                    <motion.tr
+                      key={c._id ?? i}
+                      initial={{ opacity: 0, backgroundColor: '#eef2ff' }}
+                      animate={{ opacity: 1, backgroundColor: '#ffffff' }}
+                      transition={{ duration: 0.5 }}
+                      className="text-gray-700"
+                    >
+                      <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                      <td className="py-2 pr-4">{MODULE_LABELS[c.module] ?? c.module}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          c.severity === 'high'   ? 'bg-red-100 text-red-700'     :
+                          c.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                                    'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          {c.severity === 'high' ? 'Alta' : c.severity === 'medium' ? 'Moderada' : 'Leve'}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4">{c.isEmergency ? '🔴 Sí' : '🟢 No'}</td>
+                      <td className="py-2 text-gray-400 text-xs">
+                        {new Date(c.timestamp).toLocaleDateString('es-MX')}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
