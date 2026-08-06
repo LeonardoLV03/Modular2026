@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatInterface } from './components/ChatInterface';
 import { WelcomePanel } from './components/WelcomePanel';
+import { TermsModal } from './components/TermsModal';
 import { StatsPanel } from './components/StatsPanel';
 
 export type Module =
@@ -32,6 +33,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
+      <TermsModal />
       <aside
         className={`${
           showChat ? 'hidden md:flex' : 'flex'
