@@ -27,7 +27,11 @@ interface Notification {
   isEmergency: boolean;
 }
 
-export function StatsPanel() {
+interface StatsPanelProps {
+  onUnauthorized: () => void;
+}
+
+export function StatsPanel({ onUnauthorized }: StatsPanelProps) {
   const [stats, setStats]               = useState<StatsAPI.StatsData | null>(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(false);
@@ -40,7 +44,13 @@ export function StatsPanel() {
   useEffect(() => {
     StatsAPI.getStats()
       .then(setStats)
-      .catch(() => setError(true))
+      .catch(err => {
+        if (err instanceof StatsAPI.UnauthorizedError) {
+          onUnauthorized();
+        } else {
+          setError(true);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 

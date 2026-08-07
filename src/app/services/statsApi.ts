@@ -1,5 +1,39 @@
 const STATS_URL = import.meta.env.VITE_STATS_URL ?? 'http://localhost:3001';
 const QUEUE_KEY = 'modular_stats_queue';
+const TOKEN_KEY = 'modular_admin_token';
+
+export class UnauthorizedError extends Error {
+  constructor() {
+    super('No autorizado');
+    this.name = 'UnauthorizedError';
+  }
+}
+
+// ── Token de administrador ──────────────────────────────────
+export function getToken(): string | null {
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function clearToken(): void {
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function loginAdmin(user: string, password: string): Promise<void> {
+  const res = await fetch(`${STATS_URL}/api/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user, password }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+  const { token } = await res.json();
+  sessionStorage.setItem(TOKEN_KEY, token);
+}
 
 export interface ConsultationRecord {
   module: string;
@@ -89,16 +123,26 @@ export async function saveConsultation(record: ConsultationRecord): Promise<void
 
 export async function getStats(): Promise<StatsData> {
   const res = await fetch(`${STATS_URL}/api/stats`, {
+    headers: authHeaders(),
     signal: AbortSignal.timeout(8000),
   });
+  if (res.status === 401 || res.status === 403) {
+    clearToken();
+    throw new UnauthorizedError();
+  }
   if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();
 }
 
 export async function getAllConsultations() {
   const res = await fetch(`${STATS_URL}/api/consultations`, {
+    headers: authHeaders(),
     signal: AbortSignal.timeout(8000),
   });
+  if (res.status === 401 || res.status === 403) {
+    clearToken();
+    throw new UnauthorizedError();
+  }
   if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();
 }

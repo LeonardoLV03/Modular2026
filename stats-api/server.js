@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { MongoClient } = require('mongodb');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
@@ -10,6 +12,9 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // ── CORS ─────────────────────────────────────────────────────
 const allowedOrigins = [
@@ -67,7 +72,32 @@ const saveLimiter = rateLimit({
   message: { error: 'Límite de guardado alcanzado. Intenta más tarde.' },
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Demasiados intentos de login. Intenta más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(generalLimiter);
+
+// ── Autenticación ────────────────────────────────────────────
+function verifyAdmin(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const [scheme, token] = authHeader.split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
+  try {
+    req.admin = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Token inválido o expirado' });
+  }
+}
 
 // ── Validación ───────────────────────────────────────────────
 const VALID_MODULES = [
@@ -134,6 +164,30 @@ async function connectDB() {
 
 // ── Rutas ────────────────────────────────────────────────────
 
+// Login de administrador
+app.post('/api/login', loginLimiter, async (req, res) => {
+  try {
+    const { user, password } = req.body;
+
+    if (!user || !password) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+    }
+
+    const validUser = user === ADMIN_USER;
+    const validPassword = await bcrypt.compare(password, ADMIN_PASSWORD);
+
+    if (!validUser || !validPassword) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const token = jwt.sign({ user }, JWT_SECRET, { expiresIn: '8h' });
+    res.json({ token });
+  } catch (error) {
+    console.error('Error en login:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Guardar consulta — emite evento en tiempo real
 app.post('/api/consultations', saveLimiter, async (req, res) => {
   try {
@@ -176,7 +230,7 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
 });
 
 // Estadísticas
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', verifyAdmin, async (req, res) => {
   try {
     const stats = await buildStats(db.collection('consultations'));
     res.json(stats);
@@ -187,7 +241,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Todas las consultas
-app.get('/api/consultations', async (req, res) => {
+app.get('/api/consultations', verifyAdmin, async (req, res) => {
   try {
     const consultations = await db.collection('consultations')
       .find({})

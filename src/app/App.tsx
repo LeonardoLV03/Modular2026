@@ -4,6 +4,8 @@ import { ChatInterface } from './components/ChatInterface';
 import { WelcomePanel } from './components/WelcomePanel';
 import { TermsModal } from './components/TermsModal';
 import { StatsPanel } from './components/StatsPanel';
+import { AdminLogin } from './components/AdminLogin';
+import * as StatsAPI from './services/statsApi';
 
 export type Module =
   | 'desmayo' | 'hemorragia' | 'asfixia' | 'quemadura'
@@ -13,6 +15,7 @@ export type Module =
 export default function App() {
   const [selectedModule, setSelectedModule] = useState<Module>(null);
   const [showStats, setShowStats] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
 
   const handleModuleSelect = (module: Module) => {
     setSelectedModule(module);
@@ -26,6 +29,15 @@ export default function App() {
   const handleShowStats = () => {
     setSelectedModule(null);
     setShowStats(true);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAdmin(true);
+  };
+
+  const handleUnauthorized = () => {
+    StatsAPI.clearToken();
+    setIsAdmin(false);
   };
 
   const showChat    = !!selectedModule;
@@ -55,7 +67,11 @@ export default function App() {
         {showChat ? (
           <ChatInterface module={selectedModule} onReset={handleReset} />
         ) : showStats ? (
-          <StatsPanel />
+          isAdmin ? (
+            <StatsPanel onUnauthorized={handleUnauthorized} />
+          ) : (
+            <AdminLogin onSuccess={handleLoginSuccess} />
+          )
         ) : (
           <WelcomePanel />
         )}
