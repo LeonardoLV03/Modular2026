@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BarChart3, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, BarChart3, Wifi, WifiOff } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import * as StatsAPI from '../services/statsApi';
 
@@ -29,9 +29,10 @@ interface Notification {
 
 interface StatsPanelProps {
   onUnauthorized: () => void;
+  onBack: () => void;
 }
 
-export function StatsPanel({ onUnauthorized }: StatsPanelProps) {
+export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
   const [stats, setStats]               = useState<StatsAPI.StatsData | null>(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(false);
@@ -99,13 +100,25 @@ export function StatsPanel({ onUnauthorized }: StatsPanelProps) {
   }, []);
 
   if (loading) return (
-    <div className="flex flex-1 items-center justify-center bg-gray-50">
+    <div className="relative flex flex-1 items-center justify-center bg-gray-50">
+      <button
+        onClick={onBack}
+        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
+      >
+        <ArrowLeft size={20} className="text-gray-700" />
+      </button>
       <p className="text-gray-400">Cargando estadísticas...</p>
     </div>
   );
 
   if (error || !stats) return (
-    <div className="flex flex-1 items-center justify-center bg-gray-50">
+    <div className="relative flex flex-1 items-center justify-center bg-gray-50">
+      <button
+        onClick={onBack}
+        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
+      >
+        <ArrowLeft size={20} className="text-gray-700" />
+      </button>
       <p className="text-gray-400">Error al cargar estadísticas. Verifica la conexión.</p>
     </div>
   );
@@ -144,7 +157,13 @@ export function StatsPanel({ onUnauthorized }: StatsPanelProps) {
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+            <button
+              onClick={onBack}
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 md:hidden"
+            >
+              <ArrowLeft size={20} className="text-white" />
+            </button>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hidden md:flex">
               <BarChart3 size={22} className="text-white" />
             </div>
             <div>

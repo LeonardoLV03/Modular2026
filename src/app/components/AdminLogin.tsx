@@ -1,13 +1,14 @@
 import { useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { Lock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import * as StatsAPI from '../services/statsApi';
 
 interface AdminLoginProps {
   onSuccess: () => void;
+  onBack: () => void;
 }
 
-export function AdminLogin({ onSuccess }: AdminLoginProps) {
+export function AdminLogin({ onSuccess, onBack }: AdminLoginProps) {
   const [user, setUser]         = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
@@ -20,7 +21,8 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
     try {
       await StatsAPI.loginAdmin(user, password);
       onSuccess();
-    } catch {
+    } catch (err) {
+      console.error('Login error:', err);
       setError('Usuario o contraseña incorrectos');
     } finally {
       setLoading(false);
@@ -28,7 +30,14 @@ export function AdminLogin({ onSuccess }: AdminLoginProps) {
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-gray-50 p-6">
+    <div className="relative flex flex-1 items-center justify-center bg-gray-50 p-6">
+      <button
+        onClick={onBack}
+        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
+      >
+        <ArrowLeft size={20} className="text-gray-700" />
+      </button>
+
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

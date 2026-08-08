@@ -31,6 +31,10 @@ export default function App() {
     setShowStats(true);
   };
 
+  const handleBackToMenu = () => {
+    setShowStats(false);
+  };
+
   const handleLoginSuccess = () => {
     setIsAdmin(true);
   };
@@ -42,13 +46,14 @@ export default function App() {
 
   const showChat    = !!selectedModule;
   const showWelcome = !selectedModule && !showStats;
+  const showDetail  = showChat || showStats;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
       <TermsModal />
       <aside
         className={`${
-          showChat ? 'hidden md:flex' : 'flex'
+          showDetail ? 'hidden md:flex' : 'flex'
         } w-full md:w-72 flex-shrink-0 flex-col`}
       >
         <Sidebar
@@ -68,9 +73,9 @@ export default function App() {
           <ChatInterface module={selectedModule} onReset={handleReset} />
         ) : showStats ? (
           isAdmin ? (
-            <StatsPanel onUnauthorized={handleUnauthorized} />
+            <StatsPanel onUnauthorized={handleUnauthorized} onBack={handleBackToMenu} />
           ) : (
-            <AdminLogin onSuccess={handleLoginSuccess} />
+            <AdminLogin onSuccess={handleLoginSuccess} onBack={handleBackToMenu} />
           )
         ) : (
           <WelcomePanel />

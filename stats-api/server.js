@@ -21,6 +21,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
+  'https://localhost',        // ← Capacitor Android (androidScheme: 'https')
+  'capacitor://localhost',    // ← por si algún dispositivo usa este esquema
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
