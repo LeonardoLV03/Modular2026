@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first'); // evita ENETUNREACH: Railway no tiene salida IPv6
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,6 +14,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 const app = express();
+app.set('trust proxy', 1); // Railway corre detrás de un proxy
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -27,6 +30,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  family: 4,                // fuerza IPv4 (Railway no tiene salida IPv6)
   connectionTimeout: 10000, // 10s máx para conectar
   greetingTimeout: 10000,   // 10s máx para el saludo SMTP
   socketTimeout: 10000,     // 10s máx de inactividad en el socket
