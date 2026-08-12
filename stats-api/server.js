@@ -1,31 +1,4 @@
 require('dotenv').config();
-const dns = require('dns');
-const net = require('net');
-
-// ── Forzar IPv4 en TODAS las conexiones salientes ───────────────
-// Railway no tiene salida IPv6, y dns.setDefaultResultOrder('ipv4first')
-// no basta porque Node puede seguir intentando IPv6 (Happy Eyeballs).
-// Por eso interceptamos dns.lookup directamente para que NUNCA
-// devuelva una dirección IPv6.
-const originalLookup = dns.lookup;
-dns.lookup = (hostname, options, callback) => {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  } else if (typeof options === 'number') {
-    options = { family: options };
-  }
-  // OJO: no forzamos `all`, solo `family`. MongoDB pide `all: true`
-  // para resolver el replica set — si se lo cambiamos, se rompe.
-  return originalLookup(hostname, { ...options, family: 4 }, callback);
-};
-
-// Desactiva el algoritmo "Happy Eyeballs" (que intenta IPv6 en paralelo)
-// si esta versión de Node lo soporta.
-if (typeof net.setDefaultAutoSelectFamily === 'function') {
-  net.setDefaultAutoSelectFamily(false);
-}
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -36,7 +9,6 @@ const { MongoClient, ObjectId } = require('mongodb');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 
 const app = express();
 app.set('trust proxy', 1); // Railway corre detrás de un proxy
@@ -48,26 +20,44 @@ const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 
-// ── Correo (Gmail + Nodemailer) ──────────────────────────────
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-  family: 4,                // fuerza IPv4 (Railway no tiene salida IPv6)
-  connectionTimeout: 10000, // 10s máx para conectar
-  greetingTimeout: 10000,   // 10s máx para el saludo SMTP
-  socketTimeout: 10000,     // 10s máx de inactividad en el socket
-});
+// ── Correo (Brevo API — HTTP, no SMTP) ──────────────────────────
+// Railway bloquea SMTP saliente en los planes Free/Trial/Hobby, así
+// que mandamos correo por la API HTTP de Brevo en vez de conectarnos
+// directo a un servidor SMTP como Gmail.
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'healthcareaid9@gmail.com';
+const BREVO_SENDER_NAME = 'Modular2026';
+
+async function sendEmail({ to, toName, subject, html }) {
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'content-type': 'application/json',
+      'api-key': BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+      to: [{ email: to, name: toName || to }],
+      subject,
+      htmlContent: html,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Brevo respondió ${res.status}: ${body}`);
+  }
+}
 
 async function sendVerificationEmail(email, username, token) {
   const verifyLink = `${APP_URL}/verify-email?token=${token}`;
 
   try {
-    await transporter.sendMail({
-      from: `"Modular2026" <${process.env.GMAIL_USER}>`,
+    await sendEmail({
       to: email,
+      toName: username,
       subject: 'Verifica tu cuenta — Modular2026',
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
@@ -85,14 +75,13 @@ async function sendVerificationEmail(email, username, token) {
   }
 }
 
-// ── NUEVO: correo de recuperación de contraseña ────────────────
 async function sendResetEmail(email, username, token) {
   const resetLink = `${APP_URL}/reset-password?token=${token}`;
 
   try {
-    await transporter.sendMail({
-      from: `"Modular2026" <${process.env.GMAIL_USER}>`,
+    await sendEmail({
       to: email,
+      toName: username,
       subject: 'Recupera tu contraseña — Modular2026',
       html: `
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
