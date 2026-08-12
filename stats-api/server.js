@@ -15,7 +15,9 @@ dns.lookup = (hostname, options, callback) => {
   } else if (typeof options === 'number') {
     options = { family: options };
   }
-  return originalLookup(hostname, { ...options, family: 4, all: false }, callback);
+  // OJO: no forzamos `all`, solo `family`. MongoDB pide `all: true`
+  // para resolver el replica set — si se lo cambiamos, se rompe.
+  return originalLookup(hostname, { ...options, family: 4 }, callback);
 };
 
 // Desactiva el algoritmo "Happy Eyeballs" (que intenta IPv6 en paralelo)
