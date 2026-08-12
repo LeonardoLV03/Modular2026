@@ -27,6 +27,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  connectionTimeout: 10000, // 10s máx para conectar
+  greetingTimeout: 10000,   // 10s máx para el saludo SMTP
+  socketTimeout: 10000,     // 10s máx de inactividad en el socket
 });
 
 async function sendVerificationEmail(email, username, token) {
@@ -49,8 +52,7 @@ async function sendVerificationEmail(email, username, token) {
       `,
     });
   } catch (error) {
-    console.error('Error enviando correo:', error.message);
-    throw new Error('No se pudo enviar el correo de verificación');
+    console.error('Error enviando correo de verificación:', error.message);
   }
 }
 
@@ -338,7 +340,11 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
     };
 
     await db.collection('users').insertOne(newUser);
-    await sendVerificationEmail(newUser.email, newUser.username, verificationToken);
+
+    // No bloqueamos la respuesta esperando el correo — si Gmail
+    // está lento o mal configurado, el registro no debe colgarse.
+    sendVerificationEmail(newUser.email, newUser.username, verificationToken)
+      .catch(err => console.error('Fallo enviando verificación (no bloqueante):', err.message));
 
     res.status(201).json({
       message: 'Cuenta creada. Revisa tu correo para verificarla antes de iniciar sesión.'
@@ -402,7 +408,8 @@ app.post('/api/auth/resend-verification', registerLimiter, async (req, res) => {
       { $set: { verificationToken, verificationExpires } }
     );
 
-    await sendVerificationEmail(user.email, user.username, verificationToken);
+    sendVerificationEmail(user.email, user.username, verificationToken)
+      .catch(err => console.error('Fallo reenviando verificación (no bloqueante):', err.message));
 
     res.json({ message: 'Si el correo existe, se envió un nuevo enlace de verificación.' });
   } catch (error) {
@@ -430,7 +437,8 @@ app.post('/api/auth/forgot-password', registerLimiter, async (req, res) => {
       { $set: { resetToken, resetExpires } }
     );
 
-    await sendResetEmail(user.email, user.username, resetToken);
+    sendResetEmail(user.email, user.username, resetToken)
+      .catch(err => console.error('Fallo enviando reset (no bloqueante):', err.message));
 
     res.json({ message: 'Si el correo existe, se envió un enlace de recuperación.' });
   } catch (error) {
