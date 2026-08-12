@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import {
   Heart, Droplet, Wind, Flame, Bone, FlaskConical,
-  Bug, Zap, Sun, Brain, AlertTriangle, BarChart3
+  Bug, Zap, Sun, Brain, AlertTriangle, BarChart3, GraduationCap
 } from 'lucide-react';
 import { Module } from '../App';
 
@@ -10,6 +10,8 @@ interface SidebarProps {
   onModuleSelect: (module: Module) => void;
   showStats: boolean;
   onShowStats: () => void;
+  showCourses: boolean;
+  onShowCourses: () => void;
 }
 
 const modules = [
@@ -25,7 +27,11 @@ const modules = [
   { id: 'convulsion'   as Module, name: 'Convulsión',      description: 'Episodio convulsivo',       icon: Brain,        color: '#6366f1', bgTint: 'rgba(99,102,241,0.13)'  },
 ];
 
-export function Sidebar({ selectedModule, onModuleSelect, showStats, onShowStats }: SidebarProps) {
+export function Sidebar({
+  selectedModule, onModuleSelect,
+  showStats, onShowStats,
+  showCourses, onShowCourses,
+}: SidebarProps) {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden" style={{ background: '#0f0f1a' }}>
       {/* Logo */}
@@ -39,9 +45,9 @@ export function Sidebar({ selectedModule, onModuleSelect, showStats, onShowStats
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Asistente de
+            AID
           </p>
-          <p className="text-sm font-semibold leading-tight text-white">Primeros Auxilios</p>
+          <p className="text-sm font-semibold leading-tight text-white">HealthCare</p>
         </div>
       </div>
 
@@ -97,9 +103,45 @@ export function Sidebar({ selectedModule, onModuleSelect, showStats, onShowStats
 
       <div className="flex-1" />
 
+      {/* Botón Cursos */}
+      <div className="flex-shrink-0 px-3 pt-3"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <motion.button
+          onClick={onShowCourses}
+          whileHover={{ x: 3 }}
+          whileTap={{ scale: 0.97 }}
+          className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150"
+          style={{ background: showCourses ? 'rgba(16,185,129,0.15)' : 'transparent' }}
+        >
+          {showCourses && (
+            <motion.div
+              layoutId="sidebarIndicator"
+              className="absolute left-0 h-7 w-[3px] rounded-r-full"
+              style={{ background: '#10b981' }}
+            />
+          )}
+          <div
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-150"
+            style={{ background: showCourses ? '#10b981' : 'rgba(255,255,255,0.07)' }}
+          >
+            <GraduationCap size={16} strokeWidth={2}
+              style={{ color: showCourses ? 'white' : 'rgba(255,255,255,0.4)' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight"
+              style={{ color: showCourses ? 'white' : 'rgba(255,255,255,0.65)' }}>
+              Cursos
+            </p>
+            <p className="truncate text-[11px]"
+              style={{ color: showCourses ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)' }}>
+              Aprende jugando
+            </p>
+          </div>
+        </motion.button>
+      </div>
+
       {/* Botón Estadísticas */}
-      <div className="flex-shrink-0 px-3 pb-3"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '12px' }}>
+      <div className="flex-shrink-0 px-3 pb-3 pt-1">
         <motion.button
           onClick={onShowStats}
           whileHover={{ x: 3 }}
