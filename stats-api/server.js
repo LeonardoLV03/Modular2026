@@ -1,6 +1,29 @@
 require('dotenv').config();
 const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first'); // evita ENETUNREACH: Railway no tiene salida IPv6
+const net = require('net');
+
+// ── Forzar IPv4 en TODAS las conexiones salientes ───────────────
+// Railway no tiene salida IPv6, y dns.setDefaultResultOrder('ipv4first')
+// no basta porque Node puede seguir intentando IPv6 (Happy Eyeballs).
+// Por eso interceptamos dns.lookup directamente para que NUNCA
+// devuelva una dirección IPv6.
+const originalLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  } else if (typeof options === 'number') {
+    options = { family: options };
+  }
+  return originalLookup(hostname, { ...options, family: 4, all: false }, callback);
+};
+
+// Desactiva el algoritmo "Happy Eyeballs" (que intenta IPv6 en paralelo)
+// si esta versión de Node lo soporta.
+if (typeof net.setDefaultAutoSelectFamily === 'function') {
+  net.setDefaultAutoSelectFamily(false);
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
