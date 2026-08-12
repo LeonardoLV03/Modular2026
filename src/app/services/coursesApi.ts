@@ -119,6 +119,24 @@ export async function resendVerification(email: string) {
   });
 }
 
+export async function verifyEmail(token: string) {
+  return request(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+}
+
+export async function forgotPassword(email: string) {
+  return request('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(token: string, password: string) {
+  return request('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export async function getMe(): Promise<UserData> {
   const token = getToken();
   return request('/api/users/me', {

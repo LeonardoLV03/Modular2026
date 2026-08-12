@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, GraduationCap, AlertCircle, CheckCircle2 } from 'lucide-react';
 import * as CoursesAPI from '../services/coursesApi';
+import { ForgotPassword } from './ForgotPassword';
 
 interface CoursesAuthProps {
   onSuccess: () => void;
@@ -19,6 +20,7 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
   const [error, setError] = useState('');
   const [needsVerification, setNeedsVerification] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [showForgot, setShowForgot] = useState(false);
 
   const resetMessages = () => {
     setError('');
@@ -64,6 +66,10 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
       setLoading(false);
     }
   };
+
+  if (showForgot) {
+    return <ForgotPassword onBack={() => setShowForgot(false)} />;
+  }
 
   return (
     <div className="relative flex flex-1 items-center justify-center bg-gray-50 p-6">
@@ -158,6 +164,16 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
               className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
             />
           </div>
+
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={() => setShowForgot(true)}
+              className="text-xs text-emerald-600 font-medium underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
 
           {error && (
             <div className="space-y-2">

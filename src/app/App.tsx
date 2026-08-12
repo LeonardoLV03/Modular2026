@@ -7,6 +7,8 @@ import { StatsPanel } from './components/StatsPanel';
 import { AdminLogin } from './components/AdminLogin';
 import { CoursesAuth } from './components/CoursesAuth';
 import { CoursesHome } from './components/CoursesHome';
+import { VerifyEmail } from './components/VerifyEmail';
+import { ResetPassword } from './components/ResetPassword';
 import * as StatsAPI from './services/statsApi';
 import * as CoursesAPI from './services/coursesApi';
 
@@ -21,6 +23,31 @@ export default function App() {
   const [showCourses, setShowCourses] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
   const [isCoursesUser, setIsCoursesUser] = useState(() => !!CoursesAPI.getToken());
+
+  // ── Mini-routing por pathname (la app no usa react-router) ─────
+  // Si el usuario llega desde el correo a /verify-email o
+  // /reset-password con un ?token=..., mostramos esa pantalla en
+  // vez del layout normal (sidebar + chat).
+  const currentPath = window.location.pathname;
+  const urlToken = new URLSearchParams(window.location.search).get('token');
+
+  if (currentPath === '/verify-email' && urlToken) {
+    return (
+      <VerifyEmail
+        token={urlToken}
+        onGoToLogin={() => { window.location.href = '/'; }}
+      />
+    );
+  }
+
+  if (currentPath === '/reset-password' && urlToken) {
+    return (
+      <ResetPassword
+        token={urlToken}
+        onDone={() => { window.location.href = '/'; }}
+      />
+    );
+  }
 
   const handleModuleSelect = (module: Module) => {
     setSelectedModule(module);

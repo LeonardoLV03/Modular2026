@@ -54,6 +54,31 @@ async function sendVerificationEmail(email, username, token) {
   }
 }
 
+// ── NUEVO: correo de recuperación de contraseña ────────────────
+async function sendResetEmail(email, username, token) {
+  const resetLink = `${APP_URL}/reset-password?token=${token}`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Modular2026" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Recupera tu contraseña — Modular2026',
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+          <h2 style="color: #1f2937;">Hola, ${username}</h2>
+          <p style="color: #4b5563;">Recibimos una solicitud para restablecer tu contraseña. Este enlace expira en 1 hora.</p>
+          <a href="${resetLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">
+            Restablecer contraseña
+          </a>
+          <p style="color: #9ca3af; font-size: 12px;">Si no solicitaste esto, ignora este correo.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('Error enviando correo de reseteo:', error.message);
+  }
+}
+
 // ── CORS ─────────────────────────────────────────────────────
 const allowedOrigins = [
   'http://localhost:5173',
@@ -382,6 +407,70 @@ app.post('/api/auth/resend-verification', registerLimiter, async (req, res) => {
     res.json({ message: 'Si el correo existe, se envió un nuevo enlace de verificación.' });
   } catch (error) {
     console.error('Error reenviando verificación:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── NUEVO: Solicitar recuperación de contraseña ────────────────
+app.post('/api/auth/forgot-password', registerLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await db.collection('users').findOne({ email: email?.toLowerCase() });
+
+    // Respuesta genérica siempre, para no revelar qué correos existen
+    if (!user) {
+      return res.json({ message: 'Si el correo existe, se envió un enlace de recuperación.' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      { $set: { resetToken, resetExpires } }
+    );
+
+    await sendResetEmail(user.email, user.username, resetToken);
+
+    res.json({ message: 'Si el correo existe, se envió un enlace de recuperación.' });
+  } catch (error) {
+    console.error('Error en forgot-password:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── NUEVO: Restablecer contraseña ───────────────────────────────
+app.post('/api/auth/reset-password', registerLimiter, async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token y contraseña requeridos' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    const user = await db.collection('users').findOne({ resetToken: token });
+    if (!user) {
+      return res.status(400).json({ error: 'Token inválido o ya usado' });
+    }
+    if (user.resetExpires < new Date()) {
+      return res.status(400).json({ error: 'El enlace expiró. Solicita uno nuevo.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      {
+        $set: { passwordHash },
+        $unset: { resetToken: '', resetExpires: '' }
+      }
+    );
+
+    res.json({ message: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
+  } catch (error) {
+    console.error('Error en reset-password:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
