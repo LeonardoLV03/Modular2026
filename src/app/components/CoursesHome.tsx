@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Lottie from 'lottie-react';
+import celebrationAnimation from '../assets/celebration.json';
+import WelcomeIllustration from '../assets/illustrations/welcome-courses.svg';
+import ComingSoonIllustration from '../assets/illustrations/coming-soon.svg';
 import {
   ArrowLeft, Flame, Lock, CheckCircle2, LogOut,
   Heart, Droplet, Wind, Flame as FlameIcon, Bone, FlaskConical,
@@ -88,7 +92,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
   };
 
   const selectOption = (index: number) => {
-    if (selectedOption !== null) return; // ya respondió esta pregunta
+    if (selectedOption !== null) return;
     setSelectedOption(index);
   };
 
@@ -208,37 +212,45 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
             <motion.div
               key="dashboard"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="grid grid-cols-2 gap-3 md:grid-cols-3"
             >
-              {MODULE_ORDER.map(moduleId => {
-                const meta = MODULE_META[moduleId];
-                const moduleLessons = lessonsByModule[moduleId];
-                const hasLessons = moduleLessons.length > 0;
-                const completedCount = moduleLessons.filter(l => user?.completedLessons.includes(l._id)).length;
-                const Icon = meta.icon;
+              {(user?.xp ?? 0) === 0 && (
+                <div className="mb-6 flex flex-col items-center text-center">
+                  <img src={WelcomeIllustration} alt="" className="w-48 h-48 mb-3" />
+                  <p className="text-sm text-gray-500">¡Empieza tu primera lección para ganar XP!</p>
+                </div>
+              )}
 
-                return (
-                  <button
-                    key={moduleId}
-                    disabled={!hasLessons}
-                    onClick={() => openModule(moduleId)}
-                    className={`flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left shadow-sm transition ${
-                      hasLessons ? 'hover:shadow-md' : 'opacity-50'
-                    }`}
-                  >
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-xl"
-                      style={{ background: `${meta.color}20` }}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {MODULE_ORDER.map(moduleId => {
+                  const meta = MODULE_META[moduleId];
+                  const moduleLessons = lessonsByModule[moduleId];
+                  const hasLessons = moduleLessons.length > 0;
+                  const completedCount = moduleLessons.filter(l => user?.completedLessons.includes(l._id)).length;
+                  const Icon = meta.icon;
+
+                  return (
+                    <button
+                      key={moduleId}
+                      disabled={!hasLessons}
+                      onClick={() => openModule(moduleId)}
+                      className={`flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left shadow-sm transition ${
+                        hasLessons ? 'hover:shadow-md' : 'opacity-50'
+                      }`}
                     >
-                      <Icon size={20} style={{ color: meta.color }} />
-                    </div>
-                    <p className="text-sm font-semibold text-gray-800">{meta.label}</p>
-                    <p className="text-xs text-gray-400">
-                      {hasLessons ? `${completedCount}/${moduleLessons.length} lecciones` : 'Próximamente'}
-                    </p>
-                  </button>
-                );
-              })}
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-xl"
+                        style={{ background: `${meta.color}20` }}
+                      >
+                        <Icon size={20} style={{ color: meta.color }} />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-800">{meta.label}</p>
+                      <p className="text-xs text-gray-400">
+                        {hasLessons ? `${completedCount}/${moduleLessons.length} lecciones` : 'Próximamente'}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </motion.div>
           )}
 
@@ -249,6 +261,13 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
               initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
               className="space-y-3"
             >
+              {lessonsByModule[activeModule].length === 0 && (
+                <div className="flex flex-col items-center text-center py-10">
+                  <img src={ComingSoonIllustration} alt="" className="w-40 h-40 mb-3" />
+                  <p className="text-sm text-gray-400">Este módulo estará disponible pronto</p>
+                </div>
+              )}
+
               {lessonsByModule[activeModule].map(lesson => {
                 const unlocked = isLessonUnlocked(lesson, lessonsByModule[activeModule]);
                 const completed = user?.completedLessons.includes(lesson._id);
@@ -334,10 +353,12 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="mx-auto max-w-lg text-center"
             >
-              <div className="mb-4 flex justify-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
-                  <CheckCircle2 size={40} className="text-emerald-600" />
-                </div>
+              <div className="mb-2 flex justify-center">
+                <Lottie
+                  animationData={celebrationAnimation}
+                  loop={false}
+                  style={{ width: 160, height: 160 }}
+                />
               </div>
               <p className="text-2xl font-bold text-gray-800">
                 {result.correctCount}/{result.totalQuestions} correctas
