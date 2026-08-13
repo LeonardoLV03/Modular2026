@@ -231,10 +231,9 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                   return (
                     <button
                       key={moduleId}
-                      disabled={!hasLessons}
                       onClick={() => openModule(moduleId)}
-                      className={`flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left shadow-sm transition ${
-                        hasLessons ? 'hover:shadow-md' : 'opacity-50'
+                      className={`flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left shadow-sm transition hover:shadow-md ${
+                        hasLessons ? '' : 'opacity-70'
                       }`}
                     >
                       <div
