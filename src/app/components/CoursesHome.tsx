@@ -51,7 +51,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
 
   // Tiempo mínimo de lectura antes de poder responder (evita el clic
   // instantáneo sin leer la pregunta).
-  const MIN_READ_TIME_MS = 2500;
+  const MIN_READ_TIME_MS = 1500;
 
   useEffect(() => {
     if (view !== 'lesson') return;
@@ -81,11 +81,26 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
     setView('lessons');
   };
 
-  const isLessonUnlocked = (lesson: CoursesAPI.LessonSummary, moduleLessons: CoursesAPI.LessonSummary[]) => {
-    if (lesson.order === 1) return true;
+  // Un candado puede deberse a dos razones distintas:
+  // 1) "sequence": no has terminado la lección anterior del módulo.
+  // 2) "level": la lección exige un nivel de cuenta (XP) que aún no tienes.
+  // (requiredLevel lo define cada lección en la base de datos; si no
+  // lo trae, simplemente no aplica esa restricción.)
+  const getLockReason = (
+    lesson: CoursesAPI.LessonSummary,
+    moduleLessons: CoursesAPI.LessonSummary[]
+  ): 'sequence' | 'level' | null => {
+    if (lesson.requiredLevel && (user?.level ?? 1) < lesson.requiredLevel) {
+      return 'level';
+    }
+    if (lesson.order === 1) return null;
     const prev = moduleLessons.find(l => l.order === lesson.order - 1);
-    return prev ? user?.completedLessons.includes(prev._id) : false;
+    const prevDone = prev ? user?.completedLessons.includes(prev._id) : false;
+    return prevDone ? null : 'sequence';
   };
+
+  const isLessonUnlocked = (lesson: CoursesAPI.LessonSummary, moduleLessons: CoursesAPI.LessonSummary[]) =>
+    getLockReason(lesson, moduleLessons) === null;
 
   const startLesson = async (lessonId: string) => {
     setLoading(true);
@@ -276,12 +291,11 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
             </motion.div>
           )}
 
-          {/* ── Lista de lecciones de un módulo ────────────────── */}
+          {/* ── Carrusel de lecciones de un módulo ──────────────── */}
           {view === 'lessons' && activeModule && (
             <motion.div
               key="lessons"
               initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-              className="space-y-3"
             >
               {lessonsByModule[activeModule].length === 0 && (
                 <div className="flex flex-col items-center text-center py-10">
@@ -290,33 +304,86 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 </div>
               )}
 
-              {lessonsByModule[activeModule].map(lesson => {
-                const unlocked = isLessonUnlocked(lesson, lessonsByModule[activeModule]);
-                const completed = user?.completedLessons.includes(lesson._id);
+              {lessonsByModule[activeModule].length > 0 && (() => {
+                const meta = MODULE_META[activeModule];
+                const moduleLessons = lessonsByModule[activeModule];
+                const completedCount = moduleLessons.filter(l => user?.completedLessons.includes(l._id)).length;
 
                 return (
-                  <button
-                    key={lesson._id}
-                    disabled={!unlocked}
-                    onClick={() => startLesson(lesson._id)}
-                    className={`flex w-full items-center gap-3 rounded-2xl bg-white p-4 text-left shadow-sm transition ${
-                      unlocked ? 'hover:shadow-md' : 'opacity-50'
-                    }`}
-                  >
-                    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
-                      completed ? 'bg-emerald-100' : 'bg-gray-100'
-                    }`}>
-                      {!unlocked ? <Lock size={16} className="text-gray-400" />
-                        : completed ? <CheckCircle2 size={18} className="text-emerald-600" />
-                        : <span className="text-sm font-bold text-gray-500">{lesson.order}</span>}
+                  <>
+                    <p className="mb-4 text-sm font-medium text-gray-500">
+                      {completedCount}/{moduleLessons.length} lecciones completadas
+                    </p>
+
+                    {/* carrusel horizontal con scroll-snap */}
+                    <div
+                      className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-3 snap-x snap-mandatory"
+                      style={{ scrollbarWidth: 'none' }}
+                    >
+                      {moduleLessons.map(lesson => {
+                        const lockReason = getLockReason(lesson, moduleLessons);
+                        const unlocked = lockReason === null;
+                        const completed = user?.completedLessons.includes(lesson._id);
+                        const isCurrent = unlocked && !completed;
+                        const Icon = meta.icon;
+
+                        return (
+                          <button
+                            key={lesson._id}
+                            disabled={!unlocked}
+                            onClick={() => startLesson(lesson._id)}
+                            className={`relative flex w-36 flex-shrink-0 snap-start flex-col items-center rounded-2xl p-4 text-center transition ${
+                              isCurrent || completed ? 'bg-white shadow-md' : 'shadow-sm'
+                            } ${unlocked ? 'hover:shadow-lg' : ''}`}
+                            style={!isCurrent && !completed ? { background: `${meta.color}0f` } : undefined}
+                          >
+                            <p
+                              className="text-[11px] font-bold uppercase tracking-wide"
+                              style={{ color: meta.color }}
+                            >
+                              Lección {lesson.order}
+                            </p>
+                            <p className="mt-0.5 min-h-[32px] text-xs font-semibold leading-tight text-gray-700">
+                              {lesson.title}
+                            </p>
+
+                            <div
+                              className="mt-3 flex h-16 w-16 items-center justify-center rounded-2xl"
+                              style={{ background: `${meta.color}18` }}
+                            >
+                              <Icon size={26} style={{ color: meta.color }} />
+                            </div>
+
+                            <p className="mt-3 text-[11px] text-gray-400">{lesson.xpReward} XP</p>
+
+                            {completed && (
+                              <div
+                                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full"
+                                style={{ background: meta.color }}
+                              >
+                                <CheckCircle2 size={14} className="text-white" />
+                              </div>
+                            )}
+
+                            {!unlocked && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-2xl bg-gray-900/60 px-3 text-center backdrop-blur-[1px]">
+                                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gray-900">
+                                  <Lock size={16} className="text-white" />
+                                </div>
+                                <p className="text-[11px] font-semibold leading-tight text-white">
+                                  {lockReason === 'level'
+                                    ? `Necesitas ser nivel ${lesson.requiredLevel}`
+                                    : 'Completa la lección anterior'}
+                                </p>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-gray-800">{lesson.title}</p>
-                      <p className="text-xs text-gray-400">{lesson.xpReward} XP</p>
-                    </div>
-                  </button>
+                  </>
                 );
-              })}
+              })()}
             </motion.div>
           )}
 

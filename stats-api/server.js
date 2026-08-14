@@ -245,32 +245,15 @@ function validateRegistration({ email, password, username }) {
   return errors;
 }
 
-// APP_TIMEZONE: usamos una zona fija (en vez de UTC) para que "hoy" y
-// "ayer" coincidan con el día calendario real del usuario. toISOString()
-// siempre da la fecha en UTC, así que si alguien completaba una lección
-// pasadas ~6pm hora de México, el servidor ya creía que era "otro día" en
-// UTC y la racha se desincronizaba respecto al día local real.
-const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Mexico_City';
-
-function localDateString(date = new Date(), timeZone = APP_TIMEZONE) {
-  // en-CA formatea como YYYY-MM-DD, ideal para comparar strings de fecha.
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
-}
-
 function updateStreak(user) {
-  const today = localDateString();
+  const today = new Date().toISOString().slice(0, 10);
   const last = user.streak?.lastActivityDate;
 
   if (last === today) {
     return user.streak;
   }
 
-  const yesterday = localDateString(new Date(Date.now() - 86400000));
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const current = last === yesterday ? (user.streak?.current || 0) + 1 : 1;
   const longest = Math.max(current, user.streak?.longest || 0);
 
@@ -372,7 +355,6 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       xp: 0,
       level: 1,
       completedLessons: [],
-      lessonProgress: {}, // { [lessonId]: mejorXpGanadoEnEsaLeccion }
     };
 
     await db.collection('users').insertOne(newUser);
@@ -595,11 +577,39 @@ app.get('/api/lessons', async (req, res) => {
   }
 });
 
+// Verifica si un usuario puede acceder a una lección: requisito de
+// nivel (lesson.requiredLevel, opcional) y requisito secuencial
+// (la lección anterior del mismo módulo debe estar completada).
+async function isLessonAccessible(user, lesson) {
+  if (lesson.requiredLevel && (user.level || 1) < lesson.requiredLevel) {
+    return { ok: false, reason: 'level' };
+  }
+  if (lesson.order > 1) {
+    const prev = await db.collection('lessons').findOne({ module: lesson.module, order: lesson.order - 1 });
+    if (prev && !user.completedLessons.includes(String(prev._id))) {
+      return { ok: false, reason: 'sequence' };
+    }
+  }
+  return { ok: true };
+}
+
 // ── Detalle de una lección (con preguntas) ───────────────────
 app.get('/api/lessons/:id', verifyUser, async (req, res) => {
   try {
     const lesson = await db.collection('lessons').findOne({ _id: new ObjectId(req.params.id) });
     if (!lesson) return res.status(404).json({ error: 'Lección no encontrada' });
+
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.userId) });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const access = await isLessonAccessible(user, lesson);
+    if (!access.ok) {
+      return res.status(403).json({
+        error: access.reason === 'level'
+          ? `Necesitas nivel ${lesson.requiredLevel} para acceder a esta lección`
+          : 'Debes completar la lección anterior primero',
+      });
+    }
 
     const safeLesson = {
       ...lesson,
@@ -623,6 +633,18 @@ app.post('/api/lessons/:id/complete', verifyUser, saveLimiter, async (req, res) 
     const lesson = await db.collection('lessons').findOne({ _id: new ObjectId(req.params.id) });
     if (!lesson) return res.status(404).json({ error: 'Lección no encontrada' });
 
+    const user = await db.collection('users').findOne({ _id: new ObjectId(req.userId) });
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const access = await isLessonAccessible(user, lesson);
+    if (!access.ok) {
+      return res.status(403).json({
+        error: access.reason === 'level'
+          ? `Necesitas nivel ${lesson.requiredLevel} para acceder a esta lección`
+          : 'Debes completar la lección anterior primero',
+      });
+    }
+
     if (!Array.isArray(answers) || answers.length !== lesson.questions.length) {
       return res.status(400).json({ error: 'Respuestas inválidas' });
     }
@@ -634,42 +656,21 @@ app.post('/api/lessons/:id/complete', verifyUser, saveLimiter, async (req, res) 
       return { isCorrect, correctIndex: q.correctIndex, explanation: q.explanation };
     });
 
-    // XP proporcional a lo que realmente acertaste, no un escalón fijo de
-    // "perfecto vs no-perfecto". Antes, sacar 1/5 daba lo mismo (50% XP)
-    // que sacar 4/5, lo cual no reflejaba el desempeño real.
-    const potentialXp = Math.round(lesson.xpReward * (correctCount / lesson.questions.length));
+    const perfectScore = correctCount === lesson.questions.length;
+    const xpEarned = perfectScore ? lesson.xpReward : Math.round(lesson.xpReward * 0.5);
 
-    const user = await db.collection('users').findOne({ _id: new ObjectId(req.userId) });
     const newStreak = updateStreak(user);
-
-    // Anti-farming: solo se otorga XP nuevo por lección hasta el tope de
-    // lesson.xpReward. Si ya ganaste 10/20 en un intento anterior y ahora
-    // sacas los 20, se te dan los 10 que faltaban — no otra vez los 20.
-    // Si repites una lección ya perfecta, xpEarned da 0 (no hay farming).
-    const lessonKey = String(lesson._id);
-    const previousBestXp = user.lessonProgress?.[lessonKey] || 0;
-    const newBestXp = Math.max(previousBestXp, potentialXp);
-    const xpEarned = newBestXp - previousBestXp;
-
     const newXp = (user.xp || 0) + xpEarned;
     const newLevel = Math.floor(newXp / 100) + 1;
 
-    const alreadyCompleted = user.completedLessons.includes(lessonKey);
+    const alreadyCompleted = user.completedLessons.includes(String(lesson._id));
     const completedLessons = alreadyCompleted
       ? user.completedLessons
-      : [...user.completedLessons, lessonKey];
+      : [...user.completedLessons, String(lesson._id)];
 
     await db.collection('users').updateOne(
       { _id: new ObjectId(req.userId) },
-      {
-        $set: {
-          xp: newXp,
-          level: newLevel,
-          streak: newStreak,
-          completedLessons,
-          [`lessonProgress.${lessonKey}`]: newBestXp,
-        },
-      }
+      { $set: { xp: newXp, level: newLevel, streak: newStreak, completedLessons } }
     );
 
     await db.collection('lesson_attempts').insertOne({

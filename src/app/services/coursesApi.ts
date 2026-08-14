@@ -19,6 +19,7 @@ export interface LessonSummary {
   order: number;
   title: string;
   xpReward: number;
+  requiredLevel?: number;
 }
 
 export interface LessonQuestion {
@@ -32,6 +33,7 @@ export interface LessonDetail {
   order: number;
   title: string;
   xpReward: number;
+  requiredLevel?: number;
   questions: LessonQuestion[];
 }
 

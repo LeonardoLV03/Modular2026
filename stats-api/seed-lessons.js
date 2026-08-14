@@ -633,6 +633,279 @@ const lessons = [
         "explanation": "Es común que después de convulsionar la persona se sienta confundida o cansada por un rato — hay que acompañarla con calma."
       }
     ]
+  },
+
+  // ── NUEVO: segundas (y terceras) lecciones, para ver el carrusel ──
+  // y los dos tipos de candado (secuencial + por nivel) en acción.
+
+  {
+    "module": "desmayo",
+    "order": 2,
+    "title": "Desmayo — Reconocer causas y prevenir",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Qué se debe hacer con las piernas de una persona desmayada que no respira con normalidad?",
+        "options": ["Mantenerlas rectas", "Cruzarlas", "Elevarlas por encima del nivel del corazón", "Doblarlas hacia el pecho"],
+        "correctIndex": 2,
+        "explanation": "Elevar las piernas favorece que la sangre regrese más rápido al cerebro."
+      },
+      {
+        "question": "¿Qué se debe evitar hacer con alguien que acaba de desmayarse?",
+        "options": ["Aflojar su ropa", "Verificar que respire", "Darle de beber agua de inmediato", "Mantenerla en un lugar ventilado"],
+        "correctIndex": 2,
+        "explanation": "No debe dársele nada de beber hasta que esté completamente consciente y alerta, por riesgo de atragantamiento."
+      },
+      {
+        "question": "¿Cómo debe incorporarse una persona después de recuperar la consciencia?",
+        "options": ["De golpe, cuanto antes", "Poco a poco, por etapas", "Solo si alguien la levanta con fuerza", "No debe moverse en varias horas"],
+        "correctIndex": 1,
+        "explanation": "Levantarse de golpe puede provocar un nuevo desmayo por la caída brusca de presión."
+      },
+      {
+        "question": "¿Cuál de estas puede ser una causa común de un desmayo (síncope)?",
+        "options": ["Estar de pie mucho tiempo sin moverse", "Dormir 8 horas", "Comer una fruta", "Escuchar música"],
+        "correctIndex": 0,
+        "explanation": "Permanecer de pie e inmóvil por mucho tiempo puede hacer que la sangre se acumule en las piernas y baje la presión al cerebro."
+      },
+      {
+        "question": "Si una persona se desmaya repetidamente en poco tiempo, ¿qué se recomienda?",
+        "options": ["Ignorarlo, es normal", "Buscar evaluación médica", "Darle café fuerte", "Hacerla caminar rápido"],
+        "correctIndex": 1,
+        "explanation": "Los desmayos repetidos pueden indicar una causa médica subyacente que debe evaluarse."
+      }
+    ]
+  },
+  {
+    "module": "hemorragia",
+    "order": 2,
+    "title": "Hemorragia — Control avanzado",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Qué se debe hacer si la sangre empapa la tela que usaste para presionar?",
+        "options": ["Quitar la tela y limpiar la herida", "Agregar más tela encima sin retirar la anterior", "Dejar de presionar", "Lavar la herida con agua"],
+        "correctIndex": 1,
+        "explanation": "Quitar la tela puede remover coágulos que ya se están formando; se agrega más encima."
+      },
+      {
+        "question": "¿Cuándo se considera el uso de un torniquete?",
+        "options": ["Antes de intentar presión directa", "Ante cualquier corte pequeño", "Solo si la hemorragia es masiva en una extremidad y no cede con presión directa", "Nunca debe usarse"],
+        "correctIndex": 2,
+        "explanation": "El torniquete es el último recurso, para hemorragias severas en extremidades que no ceden con presión directa."
+      },
+      {
+        "question": "¿Qué señales indican que una persona podría estar entrando en shock por pérdida de sangre?",
+        "options": ["Aumento del apetito", "Piel pálida, sudor frío y pulso acelerado", "Piel roja y fiebre", "Somnolencia leve sin otros síntomas"],
+        "correctIndex": 1,
+        "explanation": "Estos son signos clásicos de shock hipovolémico por pérdida de sangre."
+      },
+      {
+        "question": "¿Qué se debe hacer con una extremidad que sangra, además de presionar la herida?",
+        "options": ["Bajarla por debajo del corazón", "Elevarla por encima del nivel del corazón, si es posible", "Sacudirla", "No moverla en absoluto"],
+        "correctIndex": 1,
+        "explanation": "Elevar la extremidad afectada, junto con la presión directa, ayuda a reducir el flujo de sangre hacia la herida."
+      },
+      {
+        "question": "¿Qué se debe hacer apenas se coloca un torniquete?",
+        "options": ["Anotar o recordar la hora exacta en que se colocó", "Quitarlo cada pocos minutos para revisar", "Aflojarlo si la persona se queja", "Cubrirlo para que no se vea"],
+        "correctIndex": 0,
+        "explanation": "Registrar la hora es fundamental para el personal médico que atenderá después a la persona."
+      }
+    ]
+  },
+  {
+    "module": "asfixia",
+    "order": 2,
+    "title": "Asfixia — Maniobra de Heimlich",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Cómo se colocan las manos para la maniobra de Heimlich en un adulto consciente?",
+        "options": ["Sobre el pecho, empujando hacia abajo", "En la espalda, con golpes suaves", "Un puño arriba del ombligo, la otra mano encima, empujando hacia adentro y arriba", "Alrededor del cuello"],
+        "correctIndex": 2,
+        "explanation": "Se coloca el puño ligeramente por encima del ombligo y se realizan compresiones hacia adentro y arriba."
+      },
+      {
+        "question": "¿Qué se debe hacer primero si la persona todavía puede toser con fuerza?",
+        "options": ["Aplicar Heimlich de inmediato", "Darle golpes fuertes en la espalda", "Animarla a seguir tosiendo, sin intervenir aún", "Acostarla boca abajo"],
+        "correctIndex": 2,
+        "explanation": "Si puede toser, su cuerpo todavía mueve aire — se debe dejar que la tos intente expulsar el objeto primero."
+      },
+      {
+        "question": "¿Qué se hace si la persona pierde el conocimiento mientras se atraganta?",
+        "options": ["Dejarla de pie y esperar", "Recostarla con cuidado e iniciar RCP, revisando la boca entre ciclos", "Darle agua para que trague el objeto", "Sacudirla con fuerza"],
+        "correctIndex": 1,
+        "explanation": "Si pierde el conocimiento, se debe iniciar RCP y revisar la vía aérea entre ciclos."
+      },
+      {
+        "question": "¿En una persona embarazada o con obesidad, dónde se recomienda colocar las manos en vez del abdomen?",
+        "options": ["En la parte baja del abdomen", "En el centro del pecho (esternón)", "En la espalda", "En el cuello"],
+        "correctIndex": 1,
+        "explanation": "En estos casos se recomiendan compresiones torácicas en vez de abdominales."
+      },
+      {
+        "question": "Después de resolver una obstrucción con Heimlich, ¿qué se recomienda?",
+        "options": ["No es necesario hacer nada más", "Buscar evaluación médica, ya que las compresiones pueden causar lesiones internas", "Comer de inmediato", "Hacer ejercicio para confirmar que está bien"],
+        "correctIndex": 1,
+        "explanation": "Aunque el objeto haya salido, es buena práctica que un médico revise por posibles lesiones internas de las compresiones."
+      }
+    ]
+  },
+  {
+    "module": "quemadura",
+    "order": 2,
+    "title": "Quemadura — Clasificación y cuidados",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Qué caracteriza a una quemadura de segundo grado?",
+        "options": ["Solo enrojecimiento superficial sin ampollas", "Ampollas y enrojecimiento intenso", "Piel carbonizada y sin dolor", "Ningún síntoma visible"],
+        "correctIndex": 1,
+        "explanation": "Las quemaduras de segundo grado afectan la dermis y suelen presentar ampollas."
+      },
+      {
+        "question": "¿Qué NO se debe aplicar sobre una quemadura?",
+        "options": ["Agua corriente fresca", "Un paño limpio y húmedo", "Hielo directo, pasta dental o mantequilla", "Cubrirla sin apretar"],
+        "correctIndex": 2,
+        "explanation": "El hielo directo daña más el tejido, y remedios caseros como pasta dental o mantequilla pueden causar infecciones."
+      },
+      {
+        "question": "¿Durante cuánto tiempo se recomienda enfriar una quemadura con agua corriente?",
+        "options": ["Menos de 5 segundos", "Entre 10 y 20 minutos", "Más de 2 horas", "No se debe enfriar"],
+        "correctIndex": 1,
+        "explanation": "Enfriar la zona entre 10 y 20 minutos ayuda a detener el daño térmico."
+      },
+      {
+        "question": "¿Cuál es más preocupante: una quemadura con ampollas que duele mucho, o una carbonizada que no duele?",
+        "options": ["La que forma ampollas, siempre", "Duelen igual en ambos casos", "La carbonizada sin dolor, porque puede indicar daño a terminaciones nerviosas", "Ninguna es grave"],
+        "correctIndex": 2,
+        "explanation": "La ausencia de dolor en una quemadura profunda puede indicar que se dañaron las terminaciones nerviosas, lo cual es más grave."
+      },
+      {
+        "question": "¿Qué se debe hacer con la ropa pegada a una quemadura?",
+        "options": ["Arrancarla rápido", "No intentar quitarla, dejar que personal médico lo haga", "Mojarla y jalar con fuerza", "Cortarla toda de inmediato sin cuidado"],
+        "correctIndex": 1,
+        "explanation": "Intentar quitar ropa pegada a la piel quemada puede arrancar tejido y empeorar la lesión."
+      }
+    ]
+  },
+  {
+    "module": "fractura",
+    "order": 2,
+    "title": "Fractura — Inmovilización",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Qué se debe hacer antes de inmovilizar una posible fractura?",
+        "options": ["Intentar acomodar el hueso en su lugar", "Evitar mover la zona afectada y revisar si hay sangrado", "Hacer que la persona mueva la extremidad para confirmar el dolor", "Aplicar calor directo"],
+        "correctIndex": 1,
+        "explanation": "Nunca se debe intentar realinear el hueso; primero se evalúa la zona sin moverla."
+      },
+      {
+        "question": "¿Con qué se puede improvisar una férula?",
+        "options": ["Solo con las manos, sujetando firme", "Con hielo directamente sobre el hueso", "Un objeto rígido (tabla, revista enrollada) sujeto con vendas", "No es necesario inmovilizar"],
+        "correctIndex": 2,
+        "explanation": "Una férula improvisada rígida, bien sujeta, ayuda a evitar que la fractura empeore."
+      },
+      {
+        "question": "¿Qué señal indica que la inmovilización quedó demasiado apretada?",
+        "options": ["La persona deja de sentir dolor por completo", "Hormigueo, color azulado o frío en los dedos", "El área se pone más caliente de lo normal", "No hay forma de saberlo"],
+        "correctIndex": 1,
+        "explanation": "Esos signos indican que se está cortando la circulación y hay que aflojar el vendaje."
+      },
+      {
+        "question": "¿Qué articulaciones se deben inmovilizar al entablillar un hueso largo (como el antebrazo)?",
+        "options": ["Ninguna, solo el hueso", "Solo la articulación más cercana al cuerpo", "Las articulaciones por arriba y por abajo de la fractura", "Todas las articulaciones del cuerpo"],
+        "correctIndex": 2,
+        "explanation": "Inmovilizar ambas articulaciones adyacentes evita que la fractura se mueva desde cualquier extremo."
+      },
+      {
+        "question": "¿Qué se debe hacer si la persona con una posible fractura también tiene mucho dolor y ansiedad?",
+        "options": ["Ignorar sus emociones", "Hablarle con calma mientras se espera ayuda", "Dejarla sola para que se tranquilice", "Decirle que no es grave sin saberlo"],
+        "correctIndex": 1,
+        "explanation": "Mantener la calma y hablarle con tranquilidad ayuda a reducir el estrés mientras llega la atención médica."
+      }
+    ]
+  },
+  {
+    "module": "intoxicacion",
+    "order": 2,
+    "title": "Intoxicación — Primeros pasos",
+    "xpReward": 25,
+    "questions": [
+      {
+        "question": "¿Qué se debe hacer primero ante una sospecha de intoxicación?",
+        "options": ["Provocar el vómito de inmediato", "Dar leche para neutralizar cualquier veneno", "Identificar la sustancia y llamar a un centro de toxicología o emergencias", "Esperar a ver si aparecen síntomas"],
+        "correctIndex": 2,
+        "explanation": "Identificar la sustancia es clave para que los servicios de emergencia den las indicaciones correctas."
+      },
+      {
+        "question": "¿Cuándo NO se debe provocar el vómito?",
+        "options": ["Si la persona ingirió una fruta en mal estado", "Si la sustancia es un producto de limpieza, ácido o derivado del petróleo", "Nunca hay excepciones", "Solo si la persona lo pide"],
+        "correctIndex": 1,
+        "explanation": "Provocar el vómito con sustancias corrosivas puede causar daño adicional al esófago y vías respiratorias."
+      },
+      {
+        "question": "¿Qué información es más útil dar a los servicios de emergencia?",
+        "options": ["Solo la edad de la persona", "El color de los ojos de la persona", "Qué sustancia fue, cuánta cantidad y hace cuánto tiempo", "Nada, ellos preguntan todo al llegar"],
+        "correctIndex": 2,
+        "explanation": "Esa información permite decidir el tratamiento adecuado con rapidez."
+      },
+      {
+        "question": "¿Qué se debe hacer con el envase de la sustancia involucrada, si se encuentra?",
+        "options": ["Tirarlo de inmediato", "Guardarlo y llevarlo si se busca ayuda médica", "Esconderlo", "No tiene importancia"],
+        "correctIndex": 1,
+        "explanation": "El envase ayuda a identificar exactamente qué se ingirió y en qué concentración."
+      },
+      {
+        "question": "Si la persona intoxicada está consciente pero confundida, ¿qué se recomienda?",
+        "options": ["Dejarla sola para que descanse", "Quedarse con ella y vigilar su estado mientras llega ayuda", "Darle de comer algo fuerte", "Hacerla caminar rápido"],
+        "correctIndex": 1,
+        "explanation": "Vigilar de cerca permite reaccionar rápido si su estado empeora."
+      }
+    ]
+  },
+  {
+    // Esta es la que queda bloqueada por NIVEL (además de por orden) —
+    // úsala para probar el candado "Nivel 2+" del carrusel.
+    "module": "intoxicacion",
+    "order": 3,
+    "title": "Intoxicación — Casos avanzados",
+    "xpReward": 30,
+    "requiredLevel": 2,
+    "questions": [
+      {
+        "question": "¿Qué antídoto se usa comúnmente en hospitales para intoxicación por paracetamol?",
+        "options": ["Vinagre", "Bicarbonato de sodio en casa", "N-acetilcisteína", "No existe antídoto"],
+        "correctIndex": 2,
+        "explanation": "La N-acetilcisteína es el antídoto usado en hospitales para sobredosis de paracetamol."
+      },
+      {
+        "question": "¿Qué se debe hacer si una persona inhaló monóxido de carbono?",
+        "options": ["Darle café para despertarla", "Sacarla al aire libre de inmediato y buscar atención médica", "Hacerla correr para oxigenarse", "Cerrar puertas y ventanas"],
+        "correctIndex": 1,
+        "explanation": "Sacarla del ambiente contaminado y ventilar es la prioridad inmediata."
+      },
+      {
+        "question": "¿Por qué es importante conservar el envase o resto de la sustancia ingerida?",
+        "options": ["Para tirarlo después con más cuidado", "No tiene ninguna utilidad médica", "Ayuda al personal médico a identificar el tratamiento exacto", "Solo sirve como evidencia legal"],
+        "correctIndex": 2,
+        "explanation": "El envase o etiqueta ayuda a confirmar la sustancia exacta y su concentración."
+      },
+      {
+        "question": "¿Qué diferencia hay entre una intoxicación aguda y una crónica?",
+        "options": ["No hay ninguna diferencia", "La aguda ocurre por exposición única y rápida; la crónica por exposición repetida en el tiempo", "La crónica es siempre menos grave", "La aguda solo ocurre en niños"],
+        "correctIndex": 1,
+        "explanation": "La intoxicación aguda es por una sola exposición significativa; la crónica se acumula con exposiciones repetidas, a veces con síntomas menos evidentes al inicio."
+      },
+      {
+        "question": "¿Qué se debe evitar hacer si no se está seguro de qué sustancia causó la intoxicación?",
+        "options": ["Aplicar remedios caseros sin confirmar qué fue", "Llamar a un centro de toxicología", "Conservar el posible envase", "Observar los síntomas de la persona"],
+        "correctIndex": 0,
+        "explanation": "Sin saber la sustancia exacta, aplicar remedios caseros puede empeorar la situación en vez de ayudar."
+      }
+    ]
   }
 ];
 
