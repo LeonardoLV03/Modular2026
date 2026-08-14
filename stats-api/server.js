@@ -245,15 +245,32 @@ function validateRegistration({ email, password, username }) {
   return errors;
 }
 
+// APP_TIMEZONE: usamos una zona fija (en vez de UTC) para que "hoy" y
+// "ayer" coincidan con el día calendario real del usuario. toISOString()
+// siempre da la fecha en UTC, así que si alguien completaba una lección
+// pasadas ~6pm hora de México, el servidor ya creía que era "otro día" en
+// UTC y la racha se desincronizaba respecto al día local real.
+const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/Mexico_City';
+
+function localDateString(date = new Date(), timeZone = APP_TIMEZONE) {
+  // en-CA formatea como YYYY-MM-DD, ideal para comparar strings de fecha.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 function updateStreak(user) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
   const last = user.streak?.lastActivityDate;
 
   if (last === today) {
     return user.streak;
   }
 
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterday = localDateString(new Date(Date.now() - 86400000));
   const current = last === yesterday ? (user.streak?.current || 0) + 1 : 1;
   const longest = Math.max(current, user.streak?.longest || 0);
 
@@ -355,6 +372,7 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       xp: 0,
       level: 1,
       completedLessons: [],
+      lessonProgress: {}, // { [lessonId]: mejorXpGanadoEnEsaLeccion }
     };
 
     await db.collection('users').insertOne(newUser);
@@ -616,22 +634,42 @@ app.post('/api/lessons/:id/complete', verifyUser, saveLimiter, async (req, res) 
       return { isCorrect, correctIndex: q.correctIndex, explanation: q.explanation };
     });
 
-    const perfectScore = correctCount === lesson.questions.length;
-    const xpEarned = perfectScore ? lesson.xpReward : Math.round(lesson.xpReward * 0.5);
+    // XP proporcional a lo que realmente acertaste, no un escalón fijo de
+    // "perfecto vs no-perfecto". Antes, sacar 1/5 daba lo mismo (50% XP)
+    // que sacar 4/5, lo cual no reflejaba el desempeño real.
+    const potentialXp = Math.round(lesson.xpReward * (correctCount / lesson.questions.length));
 
     const user = await db.collection('users').findOne({ _id: new ObjectId(req.userId) });
     const newStreak = updateStreak(user);
+
+    // Anti-farming: solo se otorga XP nuevo por lección hasta el tope de
+    // lesson.xpReward. Si ya ganaste 10/20 en un intento anterior y ahora
+    // sacas los 20, se te dan los 10 que faltaban — no otra vez los 20.
+    // Si repites una lección ya perfecta, xpEarned da 0 (no hay farming).
+    const lessonKey = String(lesson._id);
+    const previousBestXp = user.lessonProgress?.[lessonKey] || 0;
+    const newBestXp = Math.max(previousBestXp, potentialXp);
+    const xpEarned = newBestXp - previousBestXp;
+
     const newXp = (user.xp || 0) + xpEarned;
     const newLevel = Math.floor(newXp / 100) + 1;
 
-    const alreadyCompleted = user.completedLessons.includes(String(lesson._id));
+    const alreadyCompleted = user.completedLessons.includes(lessonKey);
     const completedLessons = alreadyCompleted
       ? user.completedLessons
-      : [...user.completedLessons, String(lesson._id)];
+      : [...user.completedLessons, lessonKey];
 
     await db.collection('users').updateOne(
       { _id: new ObjectId(req.userId) },
-      { $set: { xp: newXp, level: newLevel, streak: newStreak, completedLessons } }
+      {
+        $set: {
+          xp: newXp,
+          level: newLevel,
+          streak: newStreak,
+          completedLessons,
+          [`lessonProgress.${lessonKey}`]: newBestXp,
+        },
+      }
     );
 
     await db.collection('lesson_attempts').insertOne({

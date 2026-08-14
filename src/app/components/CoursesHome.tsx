@@ -47,6 +47,18 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CoursesAPI.CompleteLessonResult | null>(null);
+  const [optionsUnlocked, setOptionsUnlocked] = useState(false);
+
+  // Tiempo mínimo de lectura antes de poder responder (evita el clic
+  // instantáneo sin leer la pregunta).
+  const MIN_READ_TIME_MS = 2500;
+
+  useEffect(() => {
+    if (view !== 'lesson') return;
+    setOptionsUnlocked(false);
+    const timer = setTimeout(() => setOptionsUnlocked(true), MIN_READ_TIME_MS);
+    return () => clearTimeout(timer);
+  }, [view, questionIndex, activeLesson?._id]);
 
   useEffect(() => {
     Promise.all([CoursesAPI.getMe(), CoursesAPI.getLessons()])
@@ -91,8 +103,19 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
     }
   };
 
+  // Reintenta la misma lección desde la pantalla de resultado, sin
+  // necesidad de volver al menú de Cursos. Vuelve a pedir las preguntas
+  // por si el orden/contenido cambió, igual que startLesson.
+  const retryLesson = () => {
+    if (!activeLesson) return;
+    startLesson(activeLesson._id);
+  };
+
   const selectOption = (index: number) => {
-    if (selectedOption !== null) return;
+    // Se puede cambiar de opción libremente antes de dar clic en
+    // "Siguiente" — solo se bloquea mientras el tiempo de lectura mínimo
+    // no ha pasado, o si ya se está enviando la lección.
+    if (!optionsUnlocked || submitting) return;
     setSelectedOption(index);
   };
 
@@ -322,9 +345,12 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                   <button
                     key={i}
                     onClick={() => selectOption(i)}
+                    disabled={!optionsUnlocked}
                     className={`w-full rounded-xl border-2 p-3.5 text-left text-sm transition ${
                       selectedOption === i
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : !optionsUnlocked
+                        ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -332,6 +358,9 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                   </button>
                 ))}
               </div>
+              {!optionsUnlocked && (
+                <p className="mt-2 text-center text-xs text-gray-400">Lee la pregunta con calma...</p>
+              )}
 
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -392,6 +421,14 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 className="mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm"
               >
                 Volver a Cursos
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { setResult(null); retryLesson(); }}
+                className="mt-3 w-full rounded-xl border-2 border-emerald-500 bg-white py-3 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50"
+              >
+                Reintentar lección
               </motion.button>
             </motion.div>
           )}
