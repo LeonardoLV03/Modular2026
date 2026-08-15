@@ -66,7 +66,17 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
         setUser(profile);
         setLessons(lessonList);
       })
-      .catch(() => setError(true))
+      .catch((err) => {
+        // Si el token ya no sirve (la cuenta fue borrada de la base de
+        // datos, o el token es inválido/expiró), NO es un error de
+        // conexión — hay que mandar de vuelta al login en vez de
+        // mostrar un mensaje engañoso de "sin internet".
+        if (err instanceof CoursesAPI.ApiError && [401, 403, 404].includes(err.status)) {
+          onLogout();
+          return;
+        }
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
