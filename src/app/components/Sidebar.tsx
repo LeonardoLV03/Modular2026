@@ -4,6 +4,7 @@ import {
   Bug, Zap, Sun, Brain, AlertTriangle, BarChart3, GraduationCap
 } from 'lucide-react';
 import { Module } from '../App';
+import Logo from '../assets/logo.svg';
 
 interface SidebarProps {
   selectedModule: Module;
@@ -37,12 +38,7 @@ export function Sidebar({
       {/* Logo */}
       <div className="flex flex-shrink-0 items-center gap-3 px-5 py-5"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-600 shadow-lg">
-          <div className="relative h-5 w-5">
-            <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-sm bg-white" />
-            <div className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-sm bg-white" />
-          </div>
-        </div>
+        <img src={Logo} alt="Modular2026" className="h-10 w-10 flex-shrink-0 object-contain" />
         <div>
           <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
             AID

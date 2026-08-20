@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Lottie from 'lottie-react';
 import celebrationAnimation from '../assets/celebration.json';
-import WelcomeIllustration from '../assets/illustrations/welcome-courses.svg';
-import ComingSoonIllustration from '../assets/illustrations/coming-soon.svg';
+import WelcomeIllustration from '../assets/illustrations/welcome-courses.png';
+import ComingSoonIllustration from '../assets/illustrations/coming-soon.png';
+import Saludo from '../assets/saludo.svg';
+import Flama from '../assets/illustrations/fuego.png';
 import {
   ArrowLeft, Flame, Lock, CheckCircle2, LogOut,
   Heart, Droplet, Wind, Flame as FlameIcon, Bone, FlaskConical,
@@ -31,7 +33,7 @@ const MODULE_META: Record<string, { label: string; icon: any; color: string }> =
 
 const MODULE_ORDER = Object.keys(MODULE_META);
 
-type View = 'dashboard' | 'lessons' | 'lesson' | 'result';
+type View = 'dashboard' | 'lessons' | 'lesson' | 'result' | 'streak';
 
 export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
   const [view, setView] = useState<View>('dashboard');
@@ -47,6 +49,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CoursesAPI.CompleteLessonResult | null>(null);
+  const [streakExtended, setStreakExtended] = useState(false);
   const [optionsUnlocked, setOptionsUnlocked] = useState(false);
 
   // Tiempo mínimo de lectura antes de poder responder (evita el clic
@@ -84,6 +87,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
     if (view === 'dashboard') { onBack(); return; }
     if (view === 'lessons') { setView('dashboard'); setActiveModule(null); return; }
     if (view === 'lesson' || view === 'result') { setView('lessons'); setActiveLesson(null); setResult(null); return; }
+    if (view === 'streak') { setView('dashboard'); setActiveModule(null); setActiveLesson(null); setResult(null); return; }
   };
 
   const openModule = (moduleId: string) => {
@@ -120,6 +124,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
       setQuestionIndex(0);
       setAnswers([]);
       setSelectedOption(null);
+      setStreakExtended(false);
       setView('lesson');
     } catch {
       setError(true);
@@ -157,6 +162,10 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
       try {
         const res = await CoursesAPI.completeLesson(activeLesson._id, newAnswers);
         setResult(res);
+        // ¿Esta lección fue la que hizo crecer la racha? Si el usuario
+        // ya había completado algo hoy, el backend no vuelve a subirla —
+        // en ese caso NO mostramos la pantalla de racha después.
+        setStreakExtended(res.streak.current > (user?.streak.current ?? 0));
         CoursesAPI.updateStoredUser({
           xp: res.xp, level: res.level, streak: res.streak,
           completedLessons: user?.completedLessons.includes(activeLesson._id)
@@ -210,9 +219,13 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 {view === 'lessons'   && MODULE_META[activeModule ?? '']?.label}
                 {view === 'lesson'    && activeLesson?.title}
                 {view === 'result'    && '¡Lección completada!'}
+                {view === 'streak'    && '¡Racha actualizada!'}
               </h2>
               {view === 'dashboard' && (
-                <p className="text-sm text-white/70">Hola, {user?.username} 👋</p>
+                <p className="flex items-center gap-1.5 text-sm text-white/70">
+                  <img src={Saludo} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
+                  Hola, {user?.username} 👋
+                </p>
               )}
             </div>
           </div>
@@ -309,7 +322,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
             >
               {lessonsByModule[activeModule].length === 0 && (
                 <div className="flex flex-col items-center text-center py-10">
-                  <img src={ComingSoonIllustration} alt="" className="w-40 h-40 mb-3" />
+                  <img src={ComingSoonIllustration} alt="" className="w-64 h-64 mb-3" />
                   <p className="text-sm text-gray-400">Este módulo estará disponible pronto</p>
                 </div>
               )}
@@ -476,11 +489,6 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 </div>
               )}
 
-              <div className="mt-4 flex items-center justify-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 w-fit mx-auto">
-                <Flame size={14} className="text-orange-500" />
-                <span className="text-sm font-medium text-orange-700">Racha: {result.streak.current} días</span>
-              </div>
-
               <div className="mt-6 space-y-2 text-left">
                 {result.results.map((r, i) => (
                   <div key={i} className="flex items-start gap-2 rounded-xl bg-white p-3 shadow-sm">
@@ -494,10 +502,16 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
 
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => { setView('dashboard'); setActiveModule(null); setActiveLesson(null); setResult(null); }}
+                onClick={() => {
+                  if (streakExtended) {
+                    setView('streak');
+                  } else {
+                    setView('dashboard'); setActiveModule(null); setActiveLesson(null); setResult(null);
+                  }
+                }}
                 className="mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm"
               >
-                Volver a Cursos
+                Continuar
               </motion.button>
 
               <motion.button
@@ -506,6 +520,66 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 className="mt-3 w-full rounded-xl border-2 border-emerald-500 bg-white py-3 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50"
               >
                 Reintentar lección
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ── Racha ─────────────────────────────────────────────── */}
+          {view === 'streak' && result && (
+            <motion.div
+              key="streak"
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="mx-auto flex max-w-lg flex-col items-center text-center"
+            >
+              {/* Burbuja de texto */}
+              <div className="relative mb-5 rounded-2xl bg-white px-5 py-3 shadow-sm">
+                <p className="text-sm font-medium text-gray-700">
+                  Completa Cursos cada día para crecer tu racha
+                </p>
+                <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1.5 rotate-45 bg-white" />
+              </div>
+
+              {/* Mascota */}
+              <img src={Flama} alt="" className="mb-3 h-32 w-32 object-contain drop-shadow-lg" />
+
+              {/* Contador grande */}
+              <p className="text-6xl font-extrabold text-orange-500">{result.streak.current}</p>
+              <p className="mb-7 text-sm font-semibold uppercase tracking-wide text-orange-500">
+                {result.streak.current === 1 ? 'día de racha' : 'días de racha'}
+              </p>
+
+              {/* Semana (últimos 7 días, marcando los que caen dentro de la racha actual) */}
+              <div className="mb-8 flex items-center justify-center gap-2">
+                {Array.from({ length: 7 }).map((_, idx) => {
+                  const daysAgo = 6 - idx;
+                  const date = new Date();
+                  date.setDate(date.getDate() - daysAgo);
+                  const label = date.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '');
+                  const completed = daysAgo < result.streak.current;
+                  const isToday = daysAgo === 0;
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1.5">
+                      <span className={`text-[11px] font-semibold uppercase ${isToday ? 'text-orange-500' : 'text-gray-400'}`}>
+                        {label}
+                      </span>
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                          completed ? 'bg-orange-500' : 'bg-gray-200'
+                        }`}
+                      >
+                        {completed && <CheckCircle2 size={18} className="text-white" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { setView('dashboard'); setActiveModule(null); setActiveLesson(null); setResult(null); }}
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm"
+              >
+                Continuar
               </motion.button>
             </motion.div>
           )}

@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Heart, Droplet, Wind, Flame, MousePointerClick, Bone, FlaskConical, Bug, Zap, Sun, Brain } from 'lucide-react';
+import Logo from '../assets/logo.svg';
 
 const hints = [
   { name: 'Desmayo', icon: Heart, color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
@@ -23,18 +24,15 @@ export function WelcomePanel() {
         transition={{ duration: 0.35 }}
         className="flex max-w-xl flex-col items-center text-center"
       >
-        {/* Cruz médica */}
-        <motion.div
+        {/* Mascota */}
+        <motion.img
+          src={Logo}
+          alt="Modular2026"
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, type: 'spring', stiffness: 260 }}
-          className="mb-7 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-xl"
-        >
-          <div className="relative h-10 w-10">
-            <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-red-500" />
-            <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-red-500" />
-          </div>
-        </motion.div>
+          className="mb-7 h-28 w-28 object-contain drop-shadow-xl"
+        />
 
         <motion.h1
           initial={{ opacity: 0 }}
