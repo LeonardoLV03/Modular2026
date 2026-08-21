@@ -1,3 +1,5 @@
 node_modules/
 .env
 dist/
+stats-api/test-streak.js
+stats-api/seed-lessons.js

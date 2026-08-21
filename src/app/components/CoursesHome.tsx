@@ -4,8 +4,8 @@ import Lottie from 'lottie-react';
 import celebrationAnimation from '../assets/celebration.json';
 import WelcomeIllustration from '../assets/illustrations/welcome-courses.png';
 import ComingSoonIllustration from '../assets/illustrations/coming-soon.png';
+import Fuego from '../assets/illustrations/fuego.png';
 import Saludo from '../assets/saludo.svg';
-import Flama from '../assets/illustrations/fuego.png';
 import {
   ArrowLeft, Flame, Lock, CheckCircle2, LogOut,
   Heart, Droplet, Wind, Flame as FlameIcon, Bone, FlaskConical,
@@ -162,10 +162,16 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
       try {
         const res = await CoursesAPI.completeLesson(activeLesson._id, newAnswers);
         setResult(res);
-        // ¿Esta lección fue la que hizo crecer la racha? Si el usuario
-        // ya había completado algo hoy, el backend no vuelve a subirla —
-        // en ese caso NO mostramos la pantalla de racha después.
-        setStreakExtended(res.streak.current > (user?.streak.current ?? 0));
+        // ¿Hoy es la primera lección que cuenta para la racha? Comparamos
+        // la fecha de última actividad de ANTES contra la de DESPUÉS —
+        // si cambió, esta lección sí modificó la racha hoy (ya sea que
+        // suba o que se reinicie a 1 por haberse roto). Si es la misma
+        // fecha, ya habías completado algo hoy y no hay nada nuevo que
+        // mostrar. Comparar por fecha (no por el número) es importante:
+        // una racha que se rompe también resetea a 1, que puede ser
+        // MENOR que la racha anterior, así que comparar solo números
+        // fallaría en detectar ese caso.
+        setStreakExtended(res.streak.lastActivityDate !== (user?.streak?.lastActivityDate ?? null));
         CoursesAPI.updateStoredUser({
           xp: res.xp, level: res.level, streak: res.streak,
           completedLessons: user?.completedLessons.includes(activeLesson._id)
@@ -223,8 +229,8 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
               </h2>
               {view === 'dashboard' && (
                 <p className="flex items-center gap-1.5 text-sm text-white/70">
-                  <img src={Saludo} alt="" className="h-4 w-4 flex-shrink-0 object-contain" />
-                  Hola, {user?.username} 👋
+                  <img src={Saludo} alt="" className="h-9 w-9 flex-shrink-0 object-contain" />
+                  Hola, {user?.username} 
                 </p>
               )}
             </div>
@@ -540,7 +546,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
               </div>
 
               {/* Mascota */}
-              <img src={Flama} alt="" className="mb-3 h-32 w-32 object-contain drop-shadow-lg" />
+              <img src={Fuego} alt="" className="mb-3 h-42 w-42 object-contain drop-shadow-lg" />
 
               {/* Contador grande */}
               <p className="text-6xl font-extrabold text-orange-500">{result.streak.current}</p>
