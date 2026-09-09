@@ -22,10 +22,37 @@ export interface LessonSummary {
   requiredLevel?: number;
 }
 
-export interface LessonQuestion {
+// Tipos de pregunta soportados. "single" es el formato original
+// (selección única); los demás son las variantes nuevas. El backend
+// asume "single" si una pregunta vieja no trae "type".
+export type QuestionType = 'single' | 'boolean' | 'order' | 'match';
+
+export interface SingleQuestion {
+  type: 'single' | 'boolean';
   question: string;
   options: string[];
 }
+
+export interface OrderQuestion {
+  type: 'order';
+  question: string;
+  steps: string[];
+}
+
+export interface MatchQuestion {
+  type: 'match';
+  question: string;
+  left: string[];
+  right: string[];
+}
+
+export type LessonQuestion = SingleQuestion | OrderQuestion | MatchQuestion;
+
+// La respuesta que se manda al backend depende del tipo:
+//   single/boolean → número (índice elegido)
+//   order          → número[] (orden en que el usuario dejó los pasos)
+//   match          → número[] (para cada left[i], índice de right elegido)
+export type LessonAnswer = number | number[];
 
 export interface LessonDetail {
   _id: string;
@@ -38,7 +65,7 @@ export interface LessonDetail {
 }
 
 export interface CompleteLessonResult {
-  results: { isCorrect: boolean; correctIndex: number; explanation: string }[];
+  results: { isCorrect: boolean; correctIndex?: number; correct?: unknown; explanation: string }[];
   correctCount: number;
   totalQuestions: number;
   xpEarned: number;
@@ -157,7 +184,7 @@ export async function getLesson(id: string): Promise<LessonDetail> {
   });
 }
 
-export async function completeLesson(id: string, answers: number[]): Promise<CompleteLessonResult> {
+export async function completeLesson(id: string, answers: LessonAnswer[]): Promise<CompleteLessonResult> {
   const token = getToken();
   return request(`/api/lessons/${id}/complete`, {
     method: 'POST',

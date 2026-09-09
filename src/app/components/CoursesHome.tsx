@@ -12,6 +12,7 @@ import {
   Bug, Zap, Sun, Brain, XCircle,
 } from 'lucide-react';
 import * as CoursesAPI from '../services/coursesApi';
+import { QuestionRenderer } from './Questionrenderer';
 
 interface CoursesHomeProps {
   onBack: () => void;
@@ -45,8 +46,8 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<CoursesAPI.LessonDetail | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<CoursesAPI.LessonAnswer[]>([]);
+  const [currentAnswer, setCurrentAnswer] = useState<CoursesAPI.LessonAnswer | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CoursesAPI.CompleteLessonResult | null>(null);
   const [streakExtended, setStreakExtended] = useState(false);
@@ -123,7 +124,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
       setActiveLesson(detail);
       setQuestionIndex(0);
       setAnswers([]);
-      setSelectedOption(null);
+      setCurrentAnswer(null);
       setStreakExtended(false);
       setView('lesson');
     } catch {
@@ -141,19 +142,11 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
     startLesson(activeLesson._id);
   };
 
-  const selectOption = (index: number) => {
-    // Se puede cambiar de opción libremente antes de dar clic en
-    // "Siguiente" — solo se bloquea mientras el tiempo de lectura mínimo
-    // no ha pasado, o si ya se está enviando la lección.
-    if (!optionsUnlocked || submitting) return;
-    setSelectedOption(index);
-  };
-
   const nextQuestion = async () => {
-    if (selectedOption === null || !activeLesson) return;
-    const newAnswers = [...answers, selectedOption];
+    if (currentAnswer === null || !activeLesson) return;
+    const newAnswers = [...answers, currentAnswer];
     setAnswers(newAnswers);
-    setSelectedOption(null);
+    setCurrentAnswer(null);
 
     if (questionIndex + 1 < activeLesson.questions.length) {
       setQuestionIndex(questionIndex + 1);
@@ -436,24 +429,12 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
                 {activeLesson.questions[questionIndex].question}
               </h3>
 
-              <div className="space-y-2.5">
-                {activeLesson.questions[questionIndex].options.map((option, i) => (
-                  <button
-                    key={i}
-                    onClick={() => selectOption(i)}
-                    disabled={!optionsUnlocked}
-                    className={`w-full rounded-xl border-2 p-3.5 text-left text-sm transition ${
-                      selectedOption === i
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                        : !optionsUnlocked
-                        ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+              <QuestionRenderer
+                question={activeLesson.questions[questionIndex]}
+                locked={!optionsUnlocked}
+                onAnswerChange={setCurrentAnswer}
+                resetKey={`${activeLesson._id}-${questionIndex}`}
+              />
               {!optionsUnlocked && (
                 <p className="mt-2 text-center text-xs text-gray-400">Lee la pregunta con calma...</p>
               )}
@@ -461,7 +442,7 @@ export function CoursesHome({ onBack, onLogout }: CoursesHomeProps) {
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={nextQuestion}
-                disabled={selectedOption === null || submitting}
+                disabled={currentAnswer === null || submitting}
                 className="mt-6 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-40"
               >
                 {submitting ? 'Enviando...' :

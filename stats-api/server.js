@@ -613,10 +613,7 @@ app.get('/api/lessons/:id', verifyUser, async (req, res) => {
 
     const safeLesson = {
       ...lesson,
-      questions: lesson.questions.map(q => ({
-        question: q.question,
-        options: q.options,
-      })),
+      questions: lesson.questions.map(sanitizeQuestion),
     };
     res.json(safeLesson);
   } catch (error) {
@@ -624,6 +621,65 @@ app.get('/api/lessons/:id', verifyUser, async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+// ── Soporte multi-tipo de pregunta ──────────────────────────────
+// Cada pregunta trae "type" ("single" | "boolean" | "order" | "match").
+// Si no trae "type", se asume "single" (formato original) para no
+// romper lecciones ya sembradas antes de este cambio.
+//
+// "answers[i]" varía de forma según el tipo:
+//   single/boolean → number (índice elegido)
+//   order          → number[] (orden en que el usuario dejó los steps,
+//                    como índices sobre el arreglo "steps" original)
+//   match          → number[] (para cada left[i], el índice de right
+//                    que el usuario emparejó)
+
+function sanitizeQuestion(q) {
+  const type = q.type || 'single';
+  // Nunca se manda correctIndex/correctOrder/correctPairs/explanation
+  // aquí — eso solo se revela después de responder, vía /complete.
+  if (type === 'single' || type === 'boolean') {
+    return { type, question: q.question, options: q.options };
+  }
+  if (type === 'order') {
+    // Mandamos los steps ya barajados para que el usuario los reordene;
+    // NO mandamos correctOrder.
+    return { type, question: q.question, steps: q.steps };
+  }
+  if (type === 'match') {
+    return { type, question: q.question, left: q.left, right: q.right };
+  }
+  // Tipo desconocido: fallback defensivo, se trata como single.
+  return { type: 'single', question: q.question, options: q.options };
+}
+
+function gradeQuestion(q, userAnswer) {
+  const type = q.type || 'single';
+
+  if (type === 'single' || type === 'boolean') {
+    const isCorrect = userAnswer === q.correctIndex;
+    return { isCorrect, correct: q.correctIndex, explanation: q.explanation };
+  }
+
+  if (type === 'order') {
+    const expected = q.correctOrder || [];
+    const given = Array.isArray(userAnswer) ? userAnswer : [];
+    const isCorrect = expected.length === given.length &&
+      expected.every((v, i) => v === given[i]);
+    return { isCorrect, correct: expected, explanation: q.explanation };
+  }
+
+  if (type === 'match') {
+    const expected = q.correctPairs || [];
+    const given = Array.isArray(userAnswer) ? userAnswer : [];
+    const isCorrect = expected.length === given.length &&
+      expected.every((v, i) => v === given[i]);
+    return { isCorrect, correct: expected, explanation: q.explanation };
+  }
+
+  // Tipo desconocido: nunca se marca correcto (evita XP gratis por bug).
+  return { isCorrect: false, correct: null, explanation: q.explanation };
+}
 
 // ── Completar lección: valida respuestas, otorga XP y racha ──
 app.post('/api/lessons/:id/complete', verifyUser, saveLimiter, async (req, res) => {
@@ -651,9 +707,14 @@ app.post('/api/lessons/:id/complete', verifyUser, saveLimiter, async (req, res) 
 
     let correctCount = 0;
     const results = lesson.questions.map((q, i) => {
-      const isCorrect = answers[i] === q.correctIndex;
-      if (isCorrect) correctCount++;
-      return { isCorrect, correctIndex: q.correctIndex, explanation: q.explanation };
+      const graded = gradeQuestion(q, answers[i]);
+      if (graded.isCorrect) correctCount++;
+      return {
+        isCorrect: graded.isCorrect,
+        correctIndex: q.correctIndex, // se mantiene por compatibilidad con "single"
+        correct: graded.correct,      // respuesta correcta genérica (sirve para order/match)
+        explanation: graded.explanation,
+      };
     });
 
     const perfectScore = correctCount === lesson.questions.length;

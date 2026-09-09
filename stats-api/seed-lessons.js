@@ -74,6 +74,7 @@ const lessons = [
     "xpReward": 20,
     "questions": [
       {
+        "type": "single",
         "question": "¿Cuál es el primer paso ante una hemorragia externa?",
         "options": [
           "Elevar la extremidad únicamente",
@@ -85,6 +86,7 @@ const lessons = [
         "explanation": "La presión directa controla la mayoría de las hemorragias sin necesitar torniquete."
       },
       {
+        "type": "single",
         "question": "¿Con qué debes aplicar presión sobre una herida sangrante?",
         "options": [
           "Con alcohol",
@@ -96,6 +98,7 @@ const lessons = [
         "explanation": "Usar una tela limpia o gasa ayuda a controlar el sangrado y reduce el riesgo de infección."
       },
       {
+        "type": "single",
         "question": "¿Cuándo se considera usar un torniquete?",
         "options": [
           "Antes de intentar la presión directa",
@@ -107,6 +110,7 @@ const lessons = [
         "explanation": "El torniquete es el último recurso, para hemorragias masivas que no ceden con presión directa."
       },
       {
+        "type": "single",
         "question": "Si la sangre empapa la tela que usaste para presionar, ¿qué debes hacer?",
         "options": [
           "Quitar la tela y poner una nueva",
@@ -118,6 +122,7 @@ const lessons = [
         "explanation": "Quitar la tela puede remover coágulos que ya se están formando — se agrega más encima sin retirar la primera."
       },
       {
+        "type": "single",
         "question": "¿Qué señal indica que una hemorragia es una emergencia grave?",
         "options": [
           "Comezón en la piel",
@@ -683,34 +688,39 @@ const lessons = [
     "xpReward": 25,
     "questions": [
       {
-        "question": "¿Qué se debe hacer si la sangre empapa la tela que usaste para presionar?",
-        "options": ["Quitar la tela y limpiar la herida", "Agregar más tela encima sin retirar la anterior", "Dejar de presionar", "Lavar la herida con agua"],
+        "type": "boolean",
+        "question": "Si la sangre empapa la tela con la que estás presionando, debes quitarla y limpiar la herida antes de seguir.",
+        "options": ["Verdadero", "Falso"],
         "correctIndex": 1,
-        "explanation": "Quitar la tela puede remover coágulos que ya se están formando; se agrega más encima."
+        "explanation": "Quitar la tela puede remover coágulos que ya se están formando; lo correcto es agregar más tela encima sin retirar la anterior."
       },
       {
-        "question": "¿Cuándo se considera el uso de un torniquete?",
-        "options": ["Antes de intentar presión directa", "Ante cualquier corte pequeño", "Solo si la hemorragia es masiva en una extremidad y no cede con presión directa", "Nunca debe usarse"],
-        "correctIndex": 2,
-        "explanation": "El torniquete es el último recurso, para hemorragias severas en extremidades que no ceden con presión directa."
-      },
-      {
-        "question": "¿Qué señales indican que una persona podría estar entrando en shock por pérdida de sangre?",
-        "options": ["Aumento del apetito", "Piel pálida, sudor frío y pulso acelerado", "Piel roja y fiebre", "Somnolencia leve sin otros síntomas"],
-        "correctIndex": 1,
-        "explanation": "Estos son signos clásicos de shock hipovolémico por pérdida de sangre."
-      },
-      {
-        "question": "¿Qué se debe hacer con una extremidad que sangra, además de presionar la herida?",
-        "options": ["Bajarla por debajo del corazón", "Elevarla por encima del nivel del corazón, si es posible", "Sacudirla", "No moverla en absoluto"],
-        "correctIndex": 1,
-        "explanation": "Elevar la extremidad afectada, junto con la presión directa, ayuda a reducir el flujo de sangre hacia la herida."
-      },
-      {
-        "question": "¿Qué se debe hacer apenas se coloca un torniquete?",
-        "options": ["Anotar o recordar la hora exacta en que se colocó", "Quitarlo cada pocos minutos para revisar", "Aflojarlo si la persona se queja", "Cubrirlo para que no se vea"],
+        "type": "boolean",
+        "question": "Un torniquete solo se considera cuando la hemorragia es masiva en una extremidad y no cede con presión directa.",
+        "options": ["Verdadero", "Falso"],
         "correctIndex": 0,
-        "explanation": "Registrar la hora es fundamental para el personal médico que atenderá después a la persona."
+        "explanation": "El torniquete es el último recurso, reservado para hemorragias severas en extremidades que no ceden con presión directa."
+      },
+      {
+        "type": "boolean",
+        "question": "Piel roja y fiebre son señales típicas de que una persona está entrando en shock por pérdida de sangre.",
+        "options": ["Verdadero", "Falso"],
+        "correctIndex": 1,
+        "explanation": "Los signos clásicos de shock hipovolémico son piel pálida, sudor frío y pulso acelerado, no piel roja ni fiebre."
+      },
+      {
+        "type": "boolean",
+        "question": "Además de presionar la herida, conviene elevar la extremidad afectada por encima del nivel del corazón si es posible.",
+        "options": ["Verdadero", "Falso"],
+        "correctIndex": 0,
+        "explanation": "Elevar la extremidad, junto con la presión directa, ayuda a reducir el flujo de sangre hacia la herida."
+      },
+      {
+        "type": "boolean",
+        "question": "Apenas se coloca un torniquete, se debe aflojar cada pocos minutos para que la extremidad no sufra daño.",
+        "options": ["Verdadero", "Falso"],
+        "correctIndex": 1,
+        "explanation": "Un torniquete no se afloja una vez colocado; lo importante es anotar la hora exacta en que se puso, para el personal médico."
       }
     ]
   },
@@ -1039,34 +1049,64 @@ const lessons = [
     "requiredLevel": 2,
     "questions": [
       {
-        "question": "¿Qué diferencia a una hemorragia arterial de una venosa?",
-        "options": ["No hay diferencia", "La arterial sale a chorros con cada latido y es de color rojo brillante; la venosa fluye continua y es más oscura", "La venosa es siempre más peligrosa", "La arterial no requiere atención"],
-        "correctIndex": 1,
-        "explanation": "La sangre arterial sale con la presión del pulso y es más oxigenada (rojo brillante); la venosa fluye de forma continua y es más oscura."
+        "type": "order",
+        "question": "Ordena cómo identificar si una hemorragia es arterial o venosa",
+        "steps": [
+          "Observa el color de la sangre",
+          "Fíjate si sale a chorros con cada latido o de forma continua",
+          "Sangre roja brillante que sale a chorros: es arterial",
+          "Sangre oscura que fluye continua: es venosa"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "La sangre arterial es más oxigenada (rojo brillante) y sale con la presión del pulso; la venosa fluye de forma continua y es más oscura."
       },
       {
-        "question": "¿Qué se debe hacer ante una hemorragia interna sospechada (sin sangre visible pero con signos de shock)?",
-        "options": ["Darle de beber mucha agua", "Mantenerla acostada, elevar piernas si no hay fractura, y buscar ayuda urgente", "Hacerla caminar para reactivar la circulación", "Ignorarlo si no hay sangre visible"],
-        "correctIndex": 1,
-        "explanation": "La hemorragia interna es una emergencia grave aunque no se vea sangre; se debe buscar atención médica de inmediato."
+        "type": "order",
+        "question": "Ordena los pasos ante una hemorragia interna sospechada (sin sangre visible pero con signos de shock)",
+        "steps": [
+          "Mantén a la persona acostada",
+          "Eleva las piernas si no hay fractura",
+          "No le des de beber ni comer",
+          "Busca ayuda médica urgente"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "La hemorragia interna es una emergencia grave aunque no se vea sangre; se debe acostar, elevar piernas si es seguro, no dar líquidos, y buscar atención médica de inmediato."
       },
       {
-        "question": "¿Qué se debe hacer si la hemorragia es en el cuero cabelludo?",
-        "options": ["No presionar porque sangra mucho", "Aplicar presión directa igual que en cualquier otra herida", "Rasurar la zona primero", "Aplicar hielo directo sin protección"],
-        "correctIndex": 1,
-        "explanation": "Las heridas en el cuero cabelludo sangran mucho por la gran cantidad de vasos sanguíneos, pero responden bien a la presión directa."
+        "type": "order",
+        "question": "Ordena cómo atender una herida sangrante en el cuero cabelludo",
+        "steps": [
+          "No te alarmes por la cantidad de sangre",
+          "Aplica presión directa con tela limpia",
+          "Mantén la presión de forma constante",
+          "Busca ayuda si el sangrado no cede"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "Las heridas en el cuero cabelludo sangran mucho por la gran cantidad de vasos sanguíneos, pero responden bien a la presión directa constante."
       },
       {
-        "question": "¿Qué se debe hacer si un objeto está clavado en la herida y sangra?",
-        "options": ["Retirarlo de inmediato", "No retirarlo; estabilizarlo y presionar alrededor, buscando ayuda urgente", "Empujarlo más adentro", "Girarlo para sacarlo con cuidado"],
-        "correctIndex": 1,
-        "explanation": "Retirar un objeto empalado puede aumentar el sangrado; se debe estabilizar y buscar ayuda médica."
+        "type": "order",
+        "question": "Ordena qué hacer si un objeto está clavado en una herida que sangra",
+        "steps": [
+          "No retires el objeto",
+          "Estabilízalo con tela o gasa alrededor",
+          "Presiona alrededor del objeto, no sobre él",
+          "Busca ayuda médica urgente"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "Retirar un objeto empalado puede aumentar el sangrado; se debe estabilizar, presionar alrededor y buscar ayuda médica."
       },
       {
-        "question": "¿Qué señal indica una posible hemorragia interna en el abdomen tras un golpe fuerte?",
-        "options": ["Dolor abdominal, hinchazón y palidez", "Solo un poco de sed", "Aumento del apetito", "Ninguna señal visible"],
-        "correctIndex": 0,
-        "explanation": "Dolor, hinchazón abdominal y palidez pueden indicar sangrado interno tras un traumatismo."
+        "type": "order",
+        "question": "Ordena cómo reconocer una posible hemorragia interna en el abdomen tras un golpe fuerte",
+        "steps": [
+          "Nota si hay dolor abdominal creciente",
+          "Revisa si hay hinchazón en la zona",
+          "Observa si la piel luce pálida",
+          "Trata como emergencia y busca ayuda médica"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "Dolor, hinchazón abdominal y palidez pueden indicar sangrado interno tras un traumatismo, y deben tratarse como una emergencia."
       }
     ]
   },
@@ -1077,34 +1117,84 @@ const lessons = [
     "xpReward": 35,
     "questions": [
       {
-        "question": "¿Cómo se realiza un vendaje compresivo correctamente?",
-        "options": ["Muy apretado para detener toda circulación", "Firme pero permitiendo revisar el color y temperatura de los dedos", "Suelto para que no incomode", "Solo con cinta adhesiva"],
-        "correctIndex": 1,
-        "explanation": "El vendaje debe ser firme pero sin cortar la circulación por completo."
+        "type": "match",
+        "question": "Empareja cada aspecto del vendaje compresivo con su descripción correcta",
+        "left": [
+          "Qué tan apretado debe quedar",
+          "Qué revisar en los dedos",
+          "Qué evitar cada pocos segundos"
+        ],
+        "right": [
+          "Firme pero permitiendo revisar color y temperatura",
+          "Levantar la tela para ver si dejó de sangrar",
+          "Color, temperatura y sensibilidad"
+        ],
+        "correctPairs": [0, 2, 1],
+        "explanation": "El vendaje debe quedar firme sin cortar la circulación, se revisa el color/temperatura/sensibilidad de los dedos, y nunca se debe levantar la tela para revisar, porque interrumpe el coágulo."
       },
       {
-        "question": "¿Qué se debe revisar periódicamente en una extremidad vendada por hemorragia?",
-        "options": ["El color de la ropa", "Color, temperatura y sensibilidad de los dedos", "El peso de la persona", "Nada en particular"],
-        "correctIndex": 1,
-        "explanation": "Estos signos indican si la circulación está siendo cortada por el vendaje."
+        "type": "match",
+        "question": "Empareja cada situación durante el vendaje con la acción correcta",
+        "left": [
+          "La sangre sigue empapando rápido después de vendar",
+          "Vas a atender la hemorragia de otra persona",
+          "Notas los dedos fríos y morados bajo el vendaje"
+        ],
+        "right": [
+          "Usar guantes o una barrera antes de tocar la herida",
+          "Aflojar un poco el vendaje, la circulación está comprometida",
+          "Agregar más presión directa y buscar ayuda urgente"
+        ],
+        "correctPairs": [2, 0, 1],
+        "explanation": "Sangrado persistente pide más presión y ayuda urgente; el contacto con sangre ajena requiere barrera de protección; y dedos fríos o morados indican que el vendaje está cortando la circulación."
       },
       {
-        "question": "¿Qué se debe hacer si, después de vendar, la sangre sigue empapando rápidamente?",
-        "options": ["Agregar más presión directa y buscar ayuda urgente", "Quitar todo el vendaje", "Esperar sin hacer nada más", "Aflojar el vendaje"],
-        "correctIndex": 0,
-        "explanation": "Si la sangre sigue saliendo con fuerza, se necesita más presión y atención médica urgente."
+        "type": "match",
+        "question": "Empareja cada signo en los dedos con lo que indica",
+        "left": [
+          "Color y temperatura normales",
+          "Dedos fríos y pálidos",
+          "Hormigueo o entumecimiento"
+        ],
+        "right": [
+          "El vendaje probablemente está demasiado apretado",
+          "Puede indicar que la circulación se está comprometiendo",
+          "La circulación en la zona está bien"
+        ],
+        "correctPairs": [2, 0, 1],
+        "explanation": "Revisar color, temperatura y sensación permite detectar a tiempo si un vendaje está cortando la circulación."
       },
       {
-        "question": "¿Por qué es importante usar guantes o una barrera al atender una hemorragia ajena?",
-        "options": ["Por estética", "Para protegerse de posibles enfermedades transmitidas por sangre", "No es necesario nunca", "Solo para no ensuciarse"],
-        "correctIndex": 1,
-        "explanation": "Usar una barrera protege tanto al auxiliador como a la persona herida de infecciones."
+        "type": "match",
+        "question": "Empareja cada práctica de protección personal con su razón",
+        "left": [
+          "Usar guantes al atender una herida ajena",
+          "No levantar la tela para revisar",
+          "Mantenerse tranquilo mientras presionas"
+        ],
+        "right": [
+          "Ayuda a que la persona herida también se mantenga calmada",
+          "Evita interrumpir la formación del coágulo",
+          "Protege de enfermedades transmitidas por sangre"
+        ],
+        "correctPairs": [2, 1, 0],
+        "explanation": "Cada práctica cumple una función distinta: proteger de infecciones, no interrumpir el coágulo, y transmitir calma a la persona herida."
       },
       {
-        "question": "Al aplicar presión directa, ¿qué se debe evitar hacer cada pocos segundos?",
-        "options": ["Hablar con la persona", "Levantar la tela para ver si dejó de sangrar", "Llamar a emergencias", "Mantenerse tranquilo"],
-        "correctIndex": 1,
-        "explanation": "Levantar la tela interrumpe la formación del coágulo y puede reiniciar el sangrado."
+        "type": "match",
+        "question": "Empareja cada error común al vendar con su consecuencia",
+        "left": [
+          "Vendar demasiado apretado",
+          "Revisar levantando la tela",
+          "No usar ninguna barrera de protección"
+        ],
+        "right": [
+          "Riesgo de contagio para quien auxilia",
+          "Corta la circulación de la extremidad",
+          "Reinicia o empeora el sangrado"
+        ],
+        "correctPairs": [1, 2, 0],
+        "explanation": "Cada error tiene una consecuencia distinta: cortar circulación, reiniciar el sangrado, o exponerse a riesgo de infección."
       }
     ]
   },
@@ -1116,34 +1206,53 @@ const lessons = [
     "requiredLevel": 3,
     "questions": [
       {
-        "question": "¿Dónde se coloca un torniquete respecto a la herida?",
-        "options": ["Directamente sobre la herida", "Unos centímetros por encima de la herida, entre esta y el corazón", "Por debajo de la herida", "En cualquier parte del cuerpo"],
+        "type": "boolean",
+        "question": "Un torniquete se coloca directamente sobre la herida, no por encima de ella.",
+        "options": ["Verdadero", "Falso"],
         "correctIndex": 1,
-        "explanation": "El torniquete se coloca por encima de la herida (más cerca del corazón) para cortar el flujo de sangre hacia la zona afectada."
+        "explanation": "El torniquete se coloca unos centímetros por encima de la herida, entre esta y el corazón, para cortar el flujo de sangre hacia la zona afectada."
       },
       {
-        "question": "¿Se debe aflojar un torniquete una vez colocado, antes de que llegue ayuda médica?",
-        "options": ["Sí, cada 10 minutos", "No, una vez colocado no se debe aflojar hasta que personal médico lo indique", "Solo si la persona lo pide", "Sí, inmediatamente después de colocarlo"],
+        "type": "boolean",
+        "question": "Un torniquete se puede aflojar cada 10 minutos mientras se espera ayuda médica.",
+        "options": ["Verdadero", "Falso"],
         "correctIndex": 1,
         "explanation": "Aflojar un torniquete puede liberar coágulos y causar un sangrado más peligroso; solo personal médico debe retirarlo."
       },
       {
-        "question": "¿Qué combinación de síntomas es característica del shock por pérdida de sangre?",
-        "options": ["Piel caliente y enrojecida, pulso lento", "Piel pálida y fría, pulso rápido y débil, respiración agitada", "Fiebre alta y sudoración", "Aumento del apetito"],
-        "correctIndex": 1,
-        "explanation": "El shock por pérdida de sangre reduce la perfusión, causando piel pálida y fría, pulso rápido y débil."
+        "type": "match",
+        "question": "Empareja cada síntoma con lo que indica sobre el estado de la persona",
+        "left": [
+          "Piel pálida y fría, pulso rápido y débil",
+          "Piel caliente y enrojecida, pulso lento",
+          "Respiración agitada junto con palidez"
+        ],
+        "right": [
+          "No es un patrón típico de shock por sangrado",
+          "Es parte del cuadro característico de shock por pérdida de sangre",
+          "Refuerza la sospecha de shock hipovolémico"
+        ],
+        "correctPairs": [1, 0, 2],
+        "explanation": "El shock por pérdida de sangre reduce la perfusión, causando piel pálida y fría, pulso rápido y débil, y respiración agitada."
       },
       {
-        "question": "¿Qué posición ayuda a una persona en shock por hemorragia, si no hay fractura de piernas?",
-        "options": ["Sentada con la cabeza hacia adelante", "Acostada con las piernas elevadas", "De pie", "Boca abajo"],
-        "correctIndex": 1,
-        "explanation": "Elevar las piernas favorece que la sangre regrese hacia los órganos vitales."
+        "type": "order",
+        "question": "Ordena los pasos para atender a una persona en shock por hemorragia mientras llega ayuda",
+        "steps": [
+          "Recuéstala y eleva las piernas si no hay fractura",
+          "Mantenla abrigada para prevenir hipotermia",
+          "No le des líquidos ni comida",
+          "Quédate con ella hasta que llegue ayuda médica"
+        ],
+        "correctOrder": [0, 1, 2, 3],
+        "explanation": "Elevar las piernas favorece el retorno de sangre a los órganos vitales; mantenerla abrigada previene hipotermia; y no se debe dar nada por la boca mientras se espera ayuda."
       },
       {
-        "question": "¿Qué se debe hacer con una persona en shock mientras se espera ayuda?",
-        "options": ["Darle de comer para recuperar energía", "Mantenerla abrigada y en calma, sin darle líquidos ni comida", "Hacerla caminar para reactivarla", "Dejarla sola"],
+        "type": "boolean",
+        "question": "Está bien darle de comer a una persona en shock mientras se espera ayuda, para que recupere energía.",
+        "options": ["Verdadero", "Falso"],
         "correctIndex": 1,
-        "explanation": "Mantenerla abrigada ayuda a prevenir la hipotermia asociada al shock, y no se debe dar comida ni bebida."
+        "explanation": "No se debe dar comida ni bebida a una persona en shock; podría complicar una eventual atención médica o causar broncoaspiración."
       }
     ]
   },
