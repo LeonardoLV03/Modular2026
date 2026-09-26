@@ -9,7 +9,7 @@ import * as PrologAPI from '../services/prologApi';
 import * as StatsAPI from '../services/statsApi';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   isUser: boolean;
   isQuestion?: boolean;
@@ -139,7 +139,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const [showDiagnosis, setShowDiagnosis]     = useState(false);
   const [diagnosisData, setDiagnosisData]     = useState<PrologAPI.DiagnosisResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const msgId          = useRef(0);
+  const sessionIdRef    = useRef<string | null>(null); // guarda el sessionId más reciente, fuera del closure del effect
 
   const label        = MODULE_LABELS[module!] ?? module ?? '';
   const currentColor = MODULE_COLORS[module!] ?? MODULE_COLORS['desmayo'];
@@ -151,10 +151,18 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
+    // Bandera de "este effect ya quedó obsoleto" — se activa en el
+    // cleanup, que React llama automáticamente en cuanto `module`
+    // cambia (o el componente se desmonta). Cualquier código async
+    // que siga corriendo después de eso debe ignorar su propio
+    // resultado en vez de tocar el estado del NUEVO módulo.
+    let cancelled = false;
+
     const initConsultation = async () => {
       setMessages([]);
       setAnswers([]);
       setSessionId(null);
+      sessionIdRef.current = null;
       setTotalQuestions(0);
       setCurrentQuestion(0);
       setIsEmergency(false);
@@ -165,30 +173,44 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
 
       try {
         const data = await PrologAPI.startConsultation(module);
+        // Si cambiaste de módulo mientras esta petición seguía en
+        // vuelo, ignoramos la respuesta — ya no corresponde a lo que
+        // se está mostrando en pantalla.
+        if (cancelled) return;
+
         setSessionId(data.sessionId);
+        sessionIdRef.current = data.sessionId;
         setTotalQuestions(data.totalQuestions);
         setCurrentQuestion(1);
         addMessage(false, `Pregunta 1 de ${data.totalQuestions}:`, true);
         addMessage(false, data.firstQuestion, true);
       } catch {
-        addMessage(false, 'No se pudo conectar con el servidor. Verifica la conexión.', false);
+        if (!cancelled) {
+          addMessage(false, 'No se pudo conectar con el servidor. Verifica la conexión.', false);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     initConsultation();
 
     return () => {
-      if (sessionId) {
-        PrologAPI.endConsultation(sessionId).catch(() => {});
+      cancelled = true;
+      // Usamos el ref (no el `sessionId` del closure, que casi siempre
+      // sigue siendo null aquí porque setSessionId ocurre después de
+      // un await) para cerrar correctamente la sesión del módulo que
+      // se está abandonando.
+      const idToClose = sessionIdRef.current;
+      if (idToClose) {
+        PrologAPI.endConsultation(idToClose).catch(() => {});
       }
     };
   }, [module]);
 
   const addMessage = (isUser: boolean, text: string, isQuestion = false) => {
-    msgId.current += 1;
-    setMessages((prev) => [...prev, { id: msgId.current, text, isUser, isQuestion }]);
+    const id = crypto.randomUUID();
+    setMessages((prev) => [...prev, { id, text, isUser, isQuestion }]);
   };
 
   const requestDiagnosis = async (answersList: string[]) => {

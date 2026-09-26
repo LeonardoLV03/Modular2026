@@ -24,10 +24,6 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
   const [isCoursesUser, setIsCoursesUser] = useState(() => !!CoursesAPI.getToken());
 
-  // ── Mini-routing por pathname (la app no usa react-router) ─────
-  // Si el usuario llega desde el correo a /verify-email o
-  // /reset-password con un ?token=..., mostramos esa pantalla en
-  // vez del layout normal (sidebar + chat).
   const currentPath = window.location.pathname;
   const urlToken = new URLSearchParams(window.location.search).get('token');
 
@@ -136,7 +132,7 @@ export default function App() {
             <CoursesAuth onSuccess={handleCoursesLoginSuccess} onBack={handleBackToMenu} />
           )
         ) : (
-          <WelcomePanel />
+          <WelcomePanel onSelect={handleModuleSelect} />
         )}
       </main>
     </div>
