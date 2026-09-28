@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, BarChart3, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, BarChart3, Wifi, WifiOff, Table2, TrendingUp } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import * as StatsAPI from '../services/statsApi';
+import { StatsCharts } from './StatsCharts';
 
 const STATS_URL = import.meta.env.VITE_STATS_URL ?? 'http://localhost:3001';
 
-const MODULE_LABELS: Record<string, string> = {
+export const MODULE_LABELS: Record<string, string> = {
   desmayo: 'Desmayo', hemorragia: 'Hemorragia', asfixia: 'Asfixia',
   quemadura: 'Quemadura', fractura: 'Fractura', intoxicacion: 'Intoxicación',
   picadura: 'Picadura', descarga: 'Desc. Eléctrica', insolacion: 'Insolación',
   convulsion: 'Convulsión',
 };
 
-const MODULE_COLORS: Record<string, string> = {
+export const MODULE_COLORS: Record<string, string> = {
   desmayo: '#8b5cf6', hemorragia: '#f43f5e', asfixia: '#06b6d4',
   quemadura: '#f59e0b', fractura: '#0ea5e9', intoxicacion: '#10b981',
   picadura: '#0d9488', descarga: '#eab308', insolacion: '#ef4444',
@@ -38,6 +39,7 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
   const [error, setError]               = useState(false);
   const [connected, setConnected]       = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [recentView, setRecentView]     = useState<'table' | 'charts'>('table');
   const socketRef = useRef<Socket | null>(null);
   const notifId   = useRef(0);
 
@@ -224,7 +226,7 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
           <div className="space-y-3">
             {Object.entries(stats.byModule)
               .sort((a, b) => b[1] - a[1])
-              .map(([module, count], i) => (
+              .map(([module, count]) => (
                 <div key={module} className="flex items-center gap-3">
                   <span className="w-28 text-sm text-gray-600 shrink-0 truncate">
                     {MODULE_LABELS[module] ?? module}
@@ -312,53 +314,78 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
           </div>
         </div>
 
-        {/* Consultas recientes */}
+        {/* Consultas recientes: tabla o gráficas */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-            Consultas Recientes ({stats.recentConsultations.length})
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
-                  <th className="pb-2 pr-4">#</th>
-                  <th className="pb-2 pr-4">Módulo</th>
-                  <th className="pb-2 pr-4">Severidad</th>
-                  <th className="pb-2 pr-4">Emergencia</th>
-                  <th className="pb-2">Fecha</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                <AnimatePresence>
-                  {stats.recentConsultations.map((c, i) => (
-                    <motion.tr
-                      key={c._id ?? i}
-                      initial={{ opacity: 0, backgroundColor: '#eef2ff' }}
-                      animate={{ opacity: 1, backgroundColor: '#ffffff' }}
-                      transition={{ duration: 0.5 }}
-                      className="text-gray-700"
-                    >
-                      <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
-                      <td className="py-2 pr-4">{MODULE_LABELS[c.module] ?? c.module}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          c.severity === 'high'   ? 'bg-red-100 text-red-700'     :
-                          c.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-emerald-100 text-emerald-700'
-                        }`}>
-                          {c.severity === 'high' ? 'Alta' : c.severity === 'medium' ? 'Moderada' : 'Leve'}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4">{c.isEmergency ? '🔴 Sí' : '🟢 No'}</td>
-                      <td className="py-2 text-gray-400 text-xs">
-                        {new Date(c.timestamp).toLocaleDateString('es-MX')}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Consultas Recientes ({stats.recentConsultations.length})
+            </h3>
+            <div className="flex gap-1 bg-gray-100 rounded-full p-1">
+              <button
+                onClick={() => setRecentView('table')}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  recentView === 'table' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
+                }`}
+              >
+                <Table2 size={14} /> Tabla
+              </button>
+              <button
+                onClick={() => setRecentView('charts')}
+                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  recentView === 'charts' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
+                }`}
+              >
+                <TrendingUp size={14} /> Gráficas
+              </button>
+            </div>
           </div>
+
+          {recentView === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                    <th className="pb-2 pr-4">#</th>
+                    <th className="pb-2 pr-4">Módulo</th>
+                    <th className="pb-2 pr-4">Severidad</th>
+                    <th className="pb-2 pr-4">Emergencia</th>
+                    <th className="pb-2">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  <AnimatePresence>
+                    {stats.recentConsultations.map((c, i) => (
+                      <motion.tr
+                        key={c._id ?? i}
+                        initial={{ opacity: 0, backgroundColor: '#eef2ff' }}
+                        animate={{ opacity: 1, backgroundColor: '#ffffff' }}
+                        transition={{ duration: 0.5 }}
+                        className="text-gray-700"
+                      >
+                        <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                        <td className="py-2 pr-4">{MODULE_LABELS[c.module] ?? c.module}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            c.severity === 'high'   ? 'bg-red-100 text-red-700'     :
+                            c.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                                      'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {c.severity === 'high' ? 'Alta' : c.severity === 'medium' ? 'Moderada' : 'Leve'}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4">{c.isEmergency ? '🔴 Sí' : '🟢 No'}</td>
+                        <td className="py-2 text-gray-400 text-xs">
+                          {new Date(c.timestamp).toLocaleDateString('es-MX')}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <StatsCharts stats={stats} />
+          )}
         </div>
       </div>
     </div>

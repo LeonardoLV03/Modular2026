@@ -283,9 +283,10 @@ async function buildStats(collection) {
     byDate[date] = (byDate[date] || 0) + 1;
   });
 
+  const RECENT_LIMIT = 36;
   const recentConsultations = consultations
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 15);
+    .slice(0, RECENT_LIMIT);
 
   return { total, byModule, bySeverity, emergencies, byDate, recentConsultations };
 }
