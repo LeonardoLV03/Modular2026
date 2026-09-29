@@ -204,7 +204,7 @@ export function DiagnosisCard({
   const severityInfo = diagnosis?.severity ? severityConfig[diagnosis.severity as keyof typeof severityConfig] : null;
 
   // Resultados del sistema Prolog (módulos con porcentaje)
-  let topResults: typeof diagnosis.results = [];
+  let topResults = diagnosis?.results ?? [];
   if (diagnosis?.results?.length) {
     const maxConfidence = Math.max(...diagnosis.results.map((r) => r.confidence));
     topResults = diagnosis.results.filter((r) => r.confidence === maxConfidence);

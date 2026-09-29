@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
   isUser: boolean;
   isQuestion?: boolean;

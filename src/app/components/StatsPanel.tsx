@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, BarChart3, Wifi, WifiOff, Table2, TrendingUp } from 'lucide-react';
+import { Table2, TrendingUp } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import * as StatsAPI from '../services/statsApi';
 import { StatsCharts } from './StatsCharts';
@@ -28,16 +28,16 @@ interface Notification {
   isEmergency: boolean;
 }
 
-interface StatsPanelProps {
+interface StatsContentProps {
   onUnauthorized: () => void;
-  onBack: () => void;
+  onConnectionChange?: (connected: boolean) => void;
 }
 
-export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
+// Contenido de la pestaña "Estadísticas" del AdminPanel (sin header propio)
+export function StatsContent({ onUnauthorized, onConnectionChange }: StatsContentProps) {
   const [stats, setStats]               = useState<StatsAPI.StatsData | null>(null);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(false);
-  const [connected, setConnected]       = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentView, setRecentView]     = useState<'table' | 'charts'>('table');
   const socketRef = useRef<Socket | null>(null);
@@ -68,11 +68,11 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      setConnected(true);
+      onConnectionChange?.(true);
     });
 
     socket.on('disconnect', () => {
-      setConnected(false);
+      onConnectionChange?.(false);
     });
 
     // Actualización de stats en tiempo real
@@ -98,37 +98,30 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
       }, 4000);
     });
 
-    return () => { socket.disconnect(); };
+    return () => {
+      socket.disconnect();
+      // Al desmontar (cambio de pestaña), el indicador no debe quedarse en "En vivo"
+      onConnectionChange?.(false);
+    };
   }, []);
 
   if (loading) return (
-    <div className="relative flex flex-1 items-center justify-center bg-gray-50">
-      <button
-        onClick={onBack}
-        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
-      >
-        <ArrowLeft size={20} className="text-gray-700" />
-      </button>
+    <div className="flex flex-1 items-center justify-center">
       <p className="text-gray-400">Cargando estadísticas...</p>
     </div>
   );
 
   if (error || !stats) return (
-    <div className="relative flex flex-1 items-center justify-center bg-gray-50">
-      <button
-        onClick={onBack}
-        className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
-      >
-        <ArrowLeft size={20} className="text-gray-700" />
-      </button>
+    <div className="flex flex-1 items-center justify-center">
       <p className="text-gray-400">Error al cargar estadísticas. Verifica la conexión.</p>
     </div>
   );
 
   const maxModule = Math.max(...Object.values(stats.byModule), 1);
 
+  // Sin `relative`: las notificaciones se posicionan respecto al AdminPanel
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* Notificaciones en tiempo real */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 w-64">
@@ -153,37 +146,6 @@ export function StatsPanel({ onUnauthorized, onBack }: StatsPanelProps) {
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
-
-      {/* Header */}
-      <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-6 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 md:hidden"
-            >
-              <ArrowLeft size={20} className="text-white" />
-            </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 hidden md:flex">
-              <BarChart3 size={22} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl text-white">Estadísticas de Uso</h2>
-              <p className="text-sm text-white/60">Panel de análisis del sistema</p>
-            </div>
-          </div>
-
-          {/* Indicador de conexión en tiempo real */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-            connected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-gray-500/20 text-gray-400'
-          }`}>
-            {connected
-              ? <><Wifi size={12} /> En vivo</>
-              : <><WifiOff size={12} /> Desconectado</>
-            }
-          </div>
-        </div>
       </div>
 
       {/* Contenido scrolleable */}

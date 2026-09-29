@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import {
   Heart, Droplet, Wind, Flame, Bone, FlaskConical,
-  Bug, Zap, Sun, Brain, AlertTriangle, BarChart3, GraduationCap
+  Bug, Zap, Sun, Brain, AlertTriangle, GraduationCap, Shield
 } from 'lucide-react';
 import { Module } from '../App';
 import Logo from '../assets/logo.svg';
@@ -9,8 +9,8 @@ import Logo from '../assets/logo.svg';
 interface SidebarProps {
   selectedModule: Module;
   onModuleSelect: (module: Module) => void;
-  showStats: boolean;
-  onShowStats: () => void;
+  showAdmin: boolean;
+  onShowAdmin: () => void;
   showCourses: boolean;
   onShowCourses: () => void;
 }
@@ -30,7 +30,7 @@ const modules = [
 
 export function Sidebar({
   selectedModule, onModuleSelect,
-  showStats, onShowStats,
+  showAdmin, onShowAdmin,
   showCourses, onShowCourses,
 }: SidebarProps) {
   return (
@@ -99,9 +99,16 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      {/* Botón Cursos */}
-      <div className="flex-shrink-0 px-3 pt-3"
+      {/* Label Aprendizaje */}
+      <div className="flex-shrink-0 px-5 pb-2 pt-4"
         style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          Aprendizaje
+        </p>
+      </div>
+
+      {/* Botón Cursos */}
+      <div className="flex-shrink-0 px-3 pb-3">
         <motion.button
           onClick={onShowCourses}
           whileHover={{ x: 3 }}
@@ -136,16 +143,24 @@ export function Sidebar({
         </motion.button>
       </div>
 
-      {/* Botón Estadísticas */}
-      <div className="flex-shrink-0 px-3 pb-3 pt-1">
+      {/* Label Administrador */}
+      <div className="flex-shrink-0 px-5 pb-2 pt-4"
+        style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          Administrador
+        </p>
+      </div>
+
+      {/* Botón Panel de Administrador */}
+      <div className="flex-shrink-0 px-3 pb-3">
         <motion.button
-          onClick={onShowStats}
+          onClick={onShowAdmin}
           whileHover={{ x: 3 }}
           whileTap={{ scale: 0.97 }}
           className="relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-150"
-          style={{ background: showStats ? 'rgba(99,102,241,0.15)' : 'transparent' }}
+          style={{ background: showAdmin ? 'rgba(99,102,241,0.15)' : 'transparent' }}
         >
-          {showStats && (
+          {showAdmin && (
             <motion.div
               layoutId="sidebarIndicator"
               className="absolute left-0 h-7 w-[3px] rounded-r-full"
@@ -154,19 +169,19 @@ export function Sidebar({
           )}
           <div
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-150"
-            style={{ background: showStats ? '#6366f1' : 'rgba(255,255,255,0.07)' }}
+            style={{ background: showAdmin ? '#6366f1' : 'rgba(255,255,255,0.07)' }}
           >
-            <BarChart3 size={16} strokeWidth={2}
-              style={{ color: showStats ? 'white' : 'rgba(255,255,255,0.4)' }} />
+            <Shield size={16} strokeWidth={2}
+              style={{ color: showAdmin ? 'white' : 'rgba(255,255,255,0.4)' }} />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium leading-tight"
-              style={{ color: showStats ? 'white' : 'rgba(255,255,255,0.65)' }}>
-              Estadísticas
+              style={{ color: showAdmin ? 'white' : 'rgba(255,255,255,0.65)' }}>
+              Panel de Administrador
             </p>
             <p className="truncate text-[11px]"
-              style={{ color: showStats ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)' }}>
-              Análisis de uso
+              style={{ color: showAdmin ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)' }}>
+              Estadísticas, usuarios y progreso
             </p>
           </div>
         </motion.button>

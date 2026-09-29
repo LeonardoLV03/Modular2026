@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -183,7 +185,12 @@ function verifyAdmin(req, res, next) {
   }
 
   try {
-    req.admin = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // Los tokens de usuarios de cursos comparten JWT_SECRET: no deben pasar como admin
+    if (decoded.type === 'user') {
+      return res.status(403).json({ error: 'Token inválido para esta ruta' });
+    }
+    req.admin = decoded;
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Token inválido o expirado' });
@@ -821,6 +828,78 @@ app.get('/api/consultations', verifyAdmin, async (req, res) => {
     res.json(consultations);
   } catch (error) {
     console.error('Error obteniendo consultas:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── Administración de usuarios ───────────────────────────────
+function daysSince(date) {
+  if (!date) return null;
+  const then = new Date(date);
+  if (isNaN(then.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - then.getTime()) / 86400000));
+}
+
+// Listado de usuarios (sin campos sensibles)
+app.get('/api/admin/users', verifyAdmin, async (req, res) => {
+  try {
+    const users = await db.collection('users')
+      .find({}, {
+        projection: {
+          email: 1, username: 1, createdAt: 1, isVerified: 1,
+          xp: 1, level: 1, streak: 1, completedLessons: 1,
+        },
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const result = users.map(u => {
+      const lastActivityDate = u.streak?.lastActivityDate ?? null;
+      const neverActive = !lastActivityDate;
+      return {
+        id:            String(u._id),
+        email:         u.email,
+        username:      u.username,
+        createdAt:     u.createdAt,
+        isVerified:    !!u.isVerified,
+        xp:            u.xp || 0,
+        level:         u.level || 1,
+        streak: {
+          current:  u.streak?.current || 0,
+          longest:  u.streak?.longest || 0,
+          lastActivityDate,
+        },
+        completedLessonsCount: Array.isArray(u.completedLessons) ? u.completedLessons.length : 0,
+        inactivityDays: daysSince(neverActive ? u.createdAt : lastActivityDate),
+        neverActive,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error obteniendo usuarios:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Borrado en cascada: usuario + sus intentos de lecciones
+app.delete('/api/admin/users/:id', verifyAdmin, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    const userId = new ObjectId(req.params.id);
+
+    const result = await db.collection('users').deleteOne({ _id: userId });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    await db.collection('lesson_attempts').deleteMany({ userId });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error eliminando usuario:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

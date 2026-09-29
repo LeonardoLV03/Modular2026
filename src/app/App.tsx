@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { ChatInterface } from './components/ChatInterface';
 import { WelcomePanel } from './components/WelcomePanel';
 import { TermsModal } from './components/TermsModal';
-import { StatsPanel } from './components/StatsPanel';
+import { AdminPanel } from './components/AdminPanel';
 import { AdminLogin } from './components/AdminLogin';
 import { CoursesAuth } from './components/CoursesAuth';
 import { CoursesHome } from './components/CoursesHome';
@@ -19,7 +19,7 @@ export type Module =
 
 export default function App() {
   const [selectedModule, setSelectedModule] = useState<Module>(null);
-  const [showStats, setShowStats] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [showCourses, setShowCourses] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
   const [isCoursesUser, setIsCoursesUser] = useState(() => !!CoursesAPI.getToken());
@@ -47,7 +47,7 @@ export default function App() {
 
   const handleModuleSelect = (module: Module) => {
     setSelectedModule(module);
-    setShowStats(false);
+    setShowAdmin(false);
     setShowCourses(false);
   };
 
@@ -60,20 +60,20 @@ export default function App() {
     setSelectedModule(null);
   };
 
-  const handleShowStats = () => {
+  const handleShowAdmin = () => {
     setSelectedModule(null);
     setShowCourses(false);
-    setShowStats(true);
+    setShowAdmin(true);
   };
 
   const handleShowCourses = () => {
     setSelectedModule(null);
-    setShowStats(false);
+    setShowAdmin(false);
     setShowCourses(true);
   };
 
   const handleBackToMenu = () => {
-    setShowStats(false);
+    setShowAdmin(false);
     setShowCourses(false);
   };
 
@@ -91,8 +91,8 @@ export default function App() {
   };
 
   const showChat    = !!selectedModule;
-  const showWelcome = !selectedModule && !showStats && !showCourses;
-  const showDetail  = showChat || showStats || showCourses;
+  const showWelcome = !selectedModule && !showAdmin && !showCourses;
+  const showDetail  = showChat || showAdmin || showCourses;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
@@ -105,8 +105,8 @@ export default function App() {
         <Sidebar
           selectedModule={selectedModule}
           onModuleSelect={handleModuleSelect}
-          showStats={showStats}
-          onShowStats={handleShowStats}
+          showAdmin={showAdmin}
+          onShowAdmin={handleShowAdmin}
           showCourses={showCourses}
           onShowCourses={handleShowCourses}
         />
@@ -119,9 +119,9 @@ export default function App() {
       >
         {showChat ? (
           <ChatInterface module={selectedModule} onReset={handleReset} />
-        ) : showStats ? (
+        ) : showAdmin ? (
           isAdmin ? (
-            <StatsPanel onUnauthorized={handleUnauthorized} onBack={handleBackToMenu} />
+            <AdminPanel onUnauthorized={handleUnauthorized} onBack={handleBackToMenu} />
           ) : (
             <AdminLogin onSuccess={handleLoginSuccess} onBack={handleBackToMenu} />
           )
