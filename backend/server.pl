@@ -39,21 +39,21 @@ pregunta(hemorragia, 1, 'Tipo de sangrado que presenta el paciente').
 pregunta(hemorragia, 2, 'Herida visible en el cuerpo').
 pregunta(hemorragia, 3, 'Tipo de dolor que reporta el paciente').
 pregunta(hemorragia, 4, 'Estado y aspecto de la piel').
-pregunta(hemorragia, 5, 'Sintomas generales del paciente').
+pregunta(hemorragia, 5, 'Síntomas generales del paciente').
 
 total_preguntas(hemorragia, 5).
 
 % --- DESMAYO (4 preguntas) ---
 pregunta(desmayo, 1, 'Estado de consciencia de la persona').
-pregunta(desmayo, 2, 'Respiracion y pulso de la persona').
+pregunta(desmayo, 2, 'Respiración y pulso de la persona').
 pregunta(desmayo, 3, 'Tiempo que lleva sin recuperar la conciencia').
-pregunta(desmayo, 4, 'Senales de alarma adicionales').
+pregunta(desmayo, 4, 'Señales de alarma adicionales').
 
 total_preguntas(desmayo, 4).
 
 % --- ASFIXIA (5 preguntas) ---
 pregunta(asfixia, 1, 'Puede hablar o toser con fuerza').
-pregunta(asfixia, 2, 'Como es la respiracion').
+pregunta(asfixia, 2, 'Cómo es la respiración').
 pregunta(asfixia, 3, 'Color de piel o labios').
 pregunta(asfixia, 4, 'Estado de conciencia de la persona').
 pregunta(asfixia, 5, 'Causa probable del episodio').
@@ -79,11 +79,11 @@ caso(hemorragia_grave,   [sangrado_abundante, mareo, debilidad, piel_palida, her
 caso(hemorragia_interna, [dolor_intenso, moretones, mareo, debilidad, herida_nosivisble]).
 
 accion(hemorragia_leve,
-    'Limpiar la herida, Mantener limpia la herida, Aplicar presion directa, Cubrir con gasa esteril').
+    'Limpiar la herida, Mantener limpia la herida, Aplicar presión directa, Cubrir con gasa estéril').
 accion(hemorragia_media,
-    'Colocar vendaje firme, Elevar la zona afectada, presion directa continua.').
+    'Colocar vendaje firme, Elevar la zona afectada, presión directa continua.').
 accion(hemorragia_grave,
-    'Llamar al 911 de inmediato, Si un objeto esta incrustado NO retirarlo, Presion fuerte y constante, Vendar o reforzar el vendaje, Mantener la persona acostada, Monitorear la respiracion y el pulso').
+    'Llamar al 911 de inmediato, Si un objeto está incrustado NO retirarlo, Presión fuerte y constante, Vendar o reforzar el vendaje, Mantener la persona acostada, Monitorear la respiración y el pulso').
 accion(hemorragia_interna,
     'Llamar al 911, Mantener la persona acostada, Mantener la calma, NO darle alimentos ni bebidas, NO medicar, Elevar piernas (Si no hay lesiones)').
 
@@ -107,16 +107,16 @@ opcion_sintomas(3, 'Dolor moderado', [dolor_moderado]).
 opcion_sintomas(3, 'Dolor intenso', [dolor_intenso]).
 opcion_sintomas(3, 'Sin dolor', []).
 
-opcion_sintomas(4, 'Palida solamente', [piel_palida]).
-opcion_sintomas(4, 'Fria y palida', [piel_palida, piel_fria]).
+opcion_sintomas(4, 'Pálida solamente', [piel_palida]).
+opcion_sintomas(4, 'Fría y pálida', [piel_palida, piel_fria]).
 opcion_sintomas(4, 'Moretones visibles', [moretones]).
 opcion_sintomas(4, 'Normal, sin cambios', []).
 
-opcion_sintomas(5, 'Mareo unicamente', [mareo]).
-opcion_sintomas(5, 'Debilidad unicamente', [debilidad]).
+opcion_sintomas(5, 'Mareo únicamente', [mareo]).
+opcion_sintomas(5, 'Debilidad únicamente', [debilidad]).
 opcion_sintomas(5, 'Mareo y debilidad juntos', [mareo, debilidad]).
-opcion_sintomas(5, 'Inflamacion en la zona afectada', [inflamacion]).
-opcion_sintomas(5, 'Perdida del conocimiento', [desmayo_hemorragia]).
+opcion_sintomas(5, 'Inflamación en la zona afectada', [inflamacion]).
+opcion_sintomas(5, 'Pérdida del conocimiento', [desmayo_hemorragia]).
 opcion_sintomas(5, 'Ninguno de los anteriores', []).
 
 respuestas_a_sintomas(Respuestas, SintomasUnicos) :-
@@ -222,17 +222,17 @@ opcion_desmayo(1, 'Confundida o desorientada, responde poco',               semi
 opcion_desmayo(1, 'No responde a nada, inconsciente',                       inconsciente).
 
 opcion_desmayo(2, 'Si, respira y tiene pulso normal',                       respira_bien).
-opcion_desmayo(2, 'Respira con dificultad o pulso debil',                   respira_mal).
+opcion_desmayo(2, 'Respira con dificultad o pulso débil',                   respira_mal).
 opcion_desmayo(2, 'No respira o no se detecta pulso',                       sin_respiracion).
 
-opcion_desmayo(3, 'No perdio la conciencia (solo mareo/debilidad)',         no_perdio_conciencia).
+opcion_desmayo(3, 'No perdió la conciencia (solo mareo/debilidad)',         no_perdio_conciencia).
 opcion_desmayo(3, 'Menos de 2 minutos inconsciente',                        menos_2min).
-opcion_desmayo(3, 'Mas de 2 minutos inconsciente',                          mas_2min).
+opcion_desmayo(3, 'Más de 2 minutos inconsciente',                          mas_2min).
 
-opcion_desmayo(4, 'Ninguna senal adicional',                                sin_alarma).
+opcion_desmayo(4, 'Ninguna señal adicional',                                sin_alarma).
 opcion_desmayo(4, 'Presenta convulsiones',                                  convulsiones).
 opcion_desmayo(4, 'Piel azulada (cianosis) o dificultad respiratoria',     cianosis).
-opcion_desmayo(4, 'Dolor en el pecho o antecedentes cardiacos',             cardiaco).
+opcion_desmayo(4, 'Dolor en el pecho o antecedentes cardíacos',             cardiaco).
 opcion_desmayo(4, 'Golpe fuerte en la cabeza al caer',                      traumatismo).
 
 % Sintomas que indican emergencia en desmayo
@@ -291,13 +291,13 @@ diagnostico(desmayo, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
         Severidad = high,
         Recomendaciones = [
             'Llama al 911 de inmediato',
-            'Mantén la via aerea despejada: inclina la cabeza hacia atras y levanta el menton',
-            'Verifica respiracion y pulso (maximo 10 segundos)',
-            'Si no hay pulso ni respiracion: inicia RCP (30 compresiones + 2 ventilaciones)',
-            'Si respira pero esta inconsciente: coloca en posicion lateral de seguridad',
+            'Mantén la vía aérea despejada: inclina la cabeza hacia atrás y levanta el mentón',
+            'Verifica respiración y pulso (máximo 10 segundos)',
+            'Si no hay pulso ni respiración: inicia RCP (30 compresiones + 2 ventilaciones)',
+            'Si respira pero está inconsciente: coloca en posición lateral de seguridad',
             'NO muevas a la persona si sospechas traumatismo en cuello o columna',
-            'NO administres medicamentos de ningun tipo',
-            'Controla hemorragias si hubo golpe durante la caida',
+            'NO administres medicamentos de ningún tipo',
+            'Controla hemorragias si hubo golpe durante la caída',
             'Permanece junto a la persona hasta que llegue ayuda profesional'
         ]
     ; Nivel = mediano ->
@@ -307,25 +307,25 @@ diagnostico(desmayo, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
             'Pide ayuda a alguien cercano de inmediato',
             'Acuesta a la persona boca arriba en una superficie plana y segura',
             'Eleva las piernas 30 a 45 cm (usa mochila, silla u objeto disponible)',
-            'Verifica respiracion y pulso',
-            'Afloja toda la ropa apretada (cinturon, cuello de camisa)',
-            'Si presenta vomito, girala a posicion lateral de seguridad (de costado)',
+            'Verifica respiración y pulso',
+            'Afloja toda la ropa apretada (cinturón, cuello de camisa)',
+            'Si presenta vómito, gírala a posición lateral de seguridad (de costado)',
             'NO administres medicamentos ni des nada por la boca',
-            'Si no despierta en 1 a 2 minutos o hay sintomas de alarma, llama al 911',
-            'Una vez consciente, no permitas que se levante rapidamente'
+            'Si no despierta en 1 a 2 minutos o hay síntomas de alarma, llama al 911',
+            'Una vez consciente, no permitas que se levante rápidamente'
         ]
     ;
         EsEmergencia = false,
         Severidad = low,
         Recomendaciones = [
             'Manten la calma y tranquiliza a la persona',
-            'Sientala con la cabeza inclinada entre las rodillas O recuestala con piernas elevadas',
-            'Afloja toda ropa ajustada (cinturon, corbata, cuello de camisa)',
-            'Ventila el area: abre ventanas o lleva a un lugar fresco',
+            'Siéntala con la cabeza inclinada entre las rodillas O recuéstala con piernas elevadas',
+            'Afloja toda ropa ajustada (cinturón, corbata, cuello de camisa)',
+            'Ventila el área: abre ventanas o lleva a un lugar fresco',
             'NO permitas que se levante bruscamente',
-            'NO ofrezcas medicamentos de ningun tipo',
+            'NO ofrezcas medicamentos de ningún tipo',
             'Monitorea durante 15 a 20 minutos antes de permitir que se incorpore lentamente',
-            'Ofrece agua fria en pequenos sorbos solo cuando este completamente alerta',
+            'Ofrece agua fría en pequeños sorbos solo cuando esté completamente alerta',
             'No dejes sola a la persona hasta que se recupere completamente'
         ]
     ).
@@ -341,32 +341,32 @@ caso_asfixia(asfixia_grave, [inconsciente, sin_respiracion]).
 accion_asfixia(asfixia_leve,
     'Anima a toser con fuerza; permanece junto a la persona; si empeora, llama al 911').
 accion_asfixia(asfixia_moderada,
-    'Aplica maniobra de Heimlich; si no mejora en pocos intentos, llama al 911; continua hasta expulsar el objeto o pierda la conciencia').
+    'Aplica maniobra de Heimlich; si no mejora en pocos intentos, llama al 911; continúa hasta expulsar el objeto o pierda la conciencia').
 accion_asfixia(asfixia_grave,
-    'Llama al 911 de inmediato; inicia RCP con compresiones toracicas; revisa la boca antes de cada ventilacion').
+    'Llama al 911 de inmediato; inicia RCP con compresiones torácicas; revisa la boca antes de cada ventilación').
 
 recomendaciones_asfixia(asfixia_leve, [
-    'Anima a toser fuerte y vigila la respiracion', 'Inclina a la persona ligeramente hacia adelante',
+    'Anima a toser fuerte y vigila la respiración', 'Inclina a la persona ligeramente hacia adelante',
     'No des liquidos ni alimentos', 'Si la tos se vuelve ineficaz o empeora, llama al 911'
 ]).
 recomendaciones_asfixia(asfixia_moderada, [
-    'Pregunta si se esta asfixiando y confirma que no puede hablar','Aplica maniobra de Heimlich con compresiones hacia adentro y arriba',
+    'Pregunta si se está asfixiando y confirma que no puede hablar','Aplica maniobra de Heimlich con compresiones hacia adentro y arriba',
     'Alterna con 5 golpes en la espalda si es seguro hacerlo','Si no mejora en pocos intentos, llama al 911',
     'Si pierde la conciencia, inicia RCP'
 ]).
 recomendaciones_asfixia(asfixia_grave, [
-    'Llama al 911 de inmediato','Coloca a la persona boca arriba en superficie plana','Inicia RCP con compresiones toracicas',
-    'Revisa la boca antes de cada ventilacion de rescate','Si vuelve a respirar, coloca en posicion lateral de seguridad'
+    'Llama al 911 de inmediato','Coloca a la persona boca arriba en superficie plana','Inicia RCP con compresiones torácicas',
+    'Revisa la boca antes de cada ventilación de rescate','Si vuelve a respirar, coloca en posición lateral de seguridad'
 ]).
 
 opcion_asfixia(1, 'Puede hablar y toser con fuerza', [puede_hablar, tos_fuerte, obstruccion_parcial]).
-opcion_asfixia(1, 'Puede hablar pero la tos es debil', [puede_hablar, tos_debil, obstruccion_parcial]).
-opcion_asfixia(1, 'No puede hablar, tos debil o ineficaz', [no_habla, tos_ineficaz, obstruccion_total]).
+opcion_asfixia(1, 'Puede hablar pero la tos es débil', [puede_hablar, tos_debil, obstruccion_parcial]).
+opcion_asfixia(1, 'No puede hablar, tos débil o ineficaz', [no_habla, tos_ineficaz, obstruccion_total]).
 opcion_asfixia(1, 'No emite sonidos ni puede toser', [no_habla, sin_tos, obstruccion_total]).
 
 opcion_asfixia(2, 'Respira con dificultad o ruidos', [respiracion_dificultosa]).
-opcion_asfixia(2, 'Respiracion ausente', [sin_respiracion]).
-opcion_asfixia(2, 'Respiracion normal', [respiracion_normal]).
+opcion_asfixia(2, 'Respiración ausente', [sin_respiracion]).
+opcion_asfixia(2, 'Respiración normal', [respiracion_normal]).
 opcion_asfixia(2, 'No estoy seguro', []).
 
 opcion_asfixia(3, 'Color normal', []).
@@ -378,10 +378,10 @@ opcion_asfixia(4, 'Agitado o confundido', [consciente, agitado]).
 opcion_asfixia(4, 'Inconsciente', [inconsciente]).
 
 opcion_asfixia(5, 'Atragantamiento con comida u objeto', [causa_obstructiva]).
-opcion_asfixia(5, 'Compresion del cuello o torax', [causa_mecanica]).
+opcion_asfixia(5, 'Compresión del cuello o tórax', [causa_mecanica]).
 opcion_asfixia(5, 'Ahogamiento por agua', [causa_sumersion]).
-opcion_asfixia(5, 'Inhalacion de humo o gases', [causa_toxica]).
-opcion_asfixia(5, 'Posicion que dificulta respirar', [causa_posicional]).
+opcion_asfixia(5, 'Inhalación de humo o gases', [causa_toxica]).
+opcion_asfixia(5, 'Posición que dificulta respirar', [causa_posicional]).
 opcion_asfixia(5, 'No estoy seguro', []).
 
 sintoma_emergencia_asfixia(sin_respiracion).

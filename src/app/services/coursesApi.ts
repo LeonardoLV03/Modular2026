@@ -141,6 +141,37 @@ export async function login(email: string, password: string): Promise<UserData> 
   return data.user;
 }
 
+export type GoogleLoginResult =
+  | { needsUsername: true; pendingToken: string; suggestedUsername: string }
+  | { needsUsername: false; user: UserData };
+
+export async function googleLogin(credential: string): Promise<GoogleLoginResult> {
+  const data = await request('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  });
+
+  if (data.needsUsername) {
+    return {
+      needsUsername: true,
+      pendingToken: data.pendingToken,
+      suggestedUsername: data.suggestedUsername,
+    };
+  }
+
+  saveSession(data.token, data.user);
+  return { needsUsername: false, user: data.user };
+}
+
+export async function completeGoogleSignup(pendingToken: string, username: string): Promise<UserData> {
+  const data = await request('/api/auth/google/complete', {
+    method: 'POST',
+    body: JSON.stringify({ pendingToken, username }),
+  });
+  saveSession(data.token, data.user);
+  return data.user;
+}
+
 export async function resendVerification(email: string) {
   return request('/api/auth/resend-verification', {
     method: 'POST',

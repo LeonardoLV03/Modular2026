@@ -21,6 +21,49 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+// ── Verificación de tokens de "Iniciar sesión con Google" ───────
+// No usamos la librería google-auth-library para no sumar una
+// dependencia más: verificamos el JWT de Google nosotros mismos
+// contra sus llaves públicas (JWKS), que cacheamos 1 hora.
+let googleCertsCache = { keys: [], expiresAt: 0 };
+
+async function getGooglePublicKey(kid) {
+  if (Date.now() > googleCertsCache.expiresAt) {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/certs', {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) throw new Error('No se pudieron obtener las llaves públicas de Google');
+    const { keys } = await res.json();
+    googleCertsCache = { keys, expiresAt: Date.now() + 60 * 60 * 1000 };
+  }
+  const jwk = googleCertsCache.keys.find(k => k.kid === kid);
+  if (!jwk) throw new Error('Llave de Google no encontrada (kid desconocido)');
+  return crypto.createPublicKey({ key: jwk, format: 'jwk' });
+}
+
+async function verifyGoogleIdToken(idToken) {
+  if (!GOOGLE_CLIENT_ID) throw new Error('GOOGLE_CLIENT_ID no está configurado en el servidor');
+  if (typeof idToken !== 'string' || idToken.split('.').length !== 3) {
+    throw new Error('Token de Google inválido');
+  }
+
+  const header = JSON.parse(Buffer.from(idToken.split('.')[0], 'base64url').toString('utf8'));
+  const publicKey = await getGooglePublicKey(header.kid);
+
+  const payload = jwt.verify(idToken, publicKey, {
+    algorithms: ['RS256'],
+    audience: GOOGLE_CLIENT_ID,
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
+  });
+
+  if (!payload.email || !payload.email_verified) {
+    throw new Error('El correo de la cuenta de Google no está verificado');
+  }
+
+  return payload; // { sub, email, email_verified, name, picture, ... }
+}
 
 // ── Correo (Brevo API — HTTP, no SMTP) ──────────────────────────
 // Railway bloquea SMTP saliente en los planes Free/Trial/Hobby, así
@@ -629,6 +672,128 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     });
   } catch (error) {
     console.error('Error en login de usuario:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── Iniciar sesión / registrarse con Google ──────────────────
+app.post('/api/auth/google', loginLimiter, async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ error: 'Falta el token de Google' });
+
+    const payload = await verifyGoogleIdToken(credential);
+    const email = payload.email.toLowerCase();
+
+    let user = await db.collection('users').findOne({ googleId: payload.sub });
+
+    if (!user) {
+      // ¿Ya existe una cuenta con ese correo (registrada con contraseña)?
+      // Si sí, la vinculamos a esta cuenta de Google en vez de duplicarla.
+      const existingByEmail = await db.collection('users').findOne({ email });
+      if (existingByEmail) {
+        await db.collection('users').updateOne(
+          { _id: existingByEmail._id },
+          { $set: { googleId: payload.sub, isVerified: true } }
+        );
+        user = { ...existingByEmail, googleId: payload.sub, isVerified: true };
+      }
+    }
+
+    if (!user) {
+      // Cuenta nueva: todavía no tiene nombre de usuario.
+      // Mandamos un token temporal (15 min) para completar el registro
+      // sin tener que guardar nada a medias en la base de datos.
+      const pendingToken = jwt.sign(
+        { type: 'google_pending', googleId: payload.sub, email, name: payload.name || '' },
+        JWT_SECRET,
+        { expiresIn: '15m' }
+      );
+      const suggestedUsername = (payload.name || email.split('@')[0])
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 20) || 'usuario';
+
+      return res.json({ needsUsername: true, pendingToken, suggestedUsername });
+    }
+
+    const token = jwt.sign({ userId: user._id, type: 'user' }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        xp: user.xp,
+        level: user.level,
+        streak: user.streak,
+        completedLessons: user.completedLessons,
+      }
+    });
+  } catch (error) {
+    console.error('Error en login con Google:', error.message);
+    res.status(401).json({ error: 'No se pudo verificar la cuenta de Google' });
+  }
+});
+
+// ── Completar registro con Google (falta elegir username) ────
+app.post('/api/auth/google/complete', registerLimiter, async (req, res) => {
+  try {
+    const { pendingToken, username } = req.body;
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({ error: 'El nombre de usuario debe tener al menos 3 caracteres' });
+    }
+    if (!pendingToken) {
+      return res.status(400).json({ error: 'Falta el token de registro' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(pendingToken, JWT_SECRET);
+    } catch {
+      return res.status(400).json({ error: 'Tu sesión de registro expiró. Inicia con Google de nuevo.' });
+    }
+    if (decoded.type !== 'google_pending') {
+      return res.status(400).json({ error: 'Token inválido' });
+    }
+
+    const [existingByGoogle, existingByEmail] = await Promise.all([
+      db.collection('users').findOne({ googleId: decoded.googleId }),
+      db.collection('users').findOne({ email: decoded.email }),
+    ]);
+    if (existingByGoogle || existingByEmail) {
+      return res.status(409).json({ error: 'Esa cuenta ya está registrada. Intenta iniciar sesión.' });
+    }
+
+    const newUser = {
+      email: decoded.email,
+      username: username.trim(),
+      googleId: decoded.googleId,
+      passwordHash: null,
+      createdAt: new Date(),
+      isVerified: true, // Google ya verificó el correo
+      streak: { current: 0, longest: 0, lastActivityDate: null },
+      xp: 0,
+      level: 1,
+      completedLessons: [],
+    };
+
+    const { insertedId } = await db.collection('users').insertOne(newUser);
+
+    const token = jwt.sign({ userId: insertedId, type: 'user' }, JWT_SECRET, { expiresIn: '30d' });
+    res.status(201).json({
+      token,
+      user: {
+        id: insertedId,
+        email: newUser.email,
+        username: newUser.username,
+        xp: newUser.xp,
+        level: newUser.level,
+        streak: newUser.streak,
+        completedLessons: newUser.completedLessons,
+      }
+    });
+  } catch (error) {
+    console.error('Error completando registro con Google:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

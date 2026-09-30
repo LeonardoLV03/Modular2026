@@ -50,25 +50,25 @@ const QUICK_REPLIES = ['Sí', 'No', 'No estoy seguro'];
 
 const DESMAYO_OPTIONS: Record<number, string[]> = {
   1: ['Consciente, responde y puede hablar', 'Confundida o desorientada, responde poco', 'No responde a nada, inconsciente'],
-  2: ['Si, respira y tiene pulso normal', 'Respira con dificultad o pulso debil', 'No respira o no se detecta pulso'],
-  3: ['No perdio la conciencia (solo mareo/debilidad)', 'Menos de 2 minutos inconsciente', 'Mas de 2 minutos inconsciente'],
-  4: ['Ninguna senal adicional', 'Presenta convulsiones', 'Piel azulada (cianosis) o dificultad respiratoria', 'Dolor en el pecho o antecedentes cardiacos', 'Golpe fuerte en la cabeza al caer'],
+  2: ['Sí, respira y tiene pulso normal', 'Respira con dificultad o pulso débil', 'No respira o no se detecta pulso'],
+  3: ['No perdió la conciencia (solo mareo/debilidad)', 'Menos de 2 minutos inconsciente', 'Más de 2 minutos inconsciente'],
+  4: ['Ninguna señal adicional', 'Presenta convulsiones', 'Piel azulada (cianosis) o dificultad respiratoria', 'Dolor en el pecho o antecedentes cardíacos', 'Golpe fuerte en la cabeza al caer'],
 };
 
 const HEMORRAGIA_OPTIONS: Record<number, string[]> = {
   1: ['Poco  (manchas o goteo leve)', 'Constante  (flujo moderado continuo)', 'Abundante  (flujo fuerte)', 'A chorros / extremadamente intenso', 'Sin sangrado visible'],
   2: ['La herida es superficial', 'La herida no es superficial', 'Sin herida visible', 'No estoy seguro'],
   3: ['Dolor moderado', 'Dolor intenso', 'Sin dolor'],
-  4: ['Palida solamente', 'Fria y palida', 'Moretones visibles', 'Normal, sin cambios'],
-  5: ['Mareo unicamente', 'Debilidad unicamente', 'Mareo y debilidad juntos', 'Inflamacion en la zona afectada', 'Perdida del conocimiento', 'Ninguno de los anteriores'],
+  4: ['Pálida solamente', 'Fría y pálida', 'Moretones visibles', 'Normal, sin cambios'],
+  5: ['Mareo únicamente', 'Debilidad únicamente', 'Mareo y debilidad juntos', 'Inflamación en la zona afectada', 'Pérdida del conocimiento', 'Ninguno de los anteriores'],
 };
 
 const ASFIXIA_OPTIONS: Record<number, string[]> = {
-  1: ['Puede hablar y toser con fuerza', 'Puede hablar pero la tos es debil', 'No puede hablar, tos debil o ineficaz', 'No emite sonidos ni puede toser'],
-  2: ['Respira con dificultad o ruidos', 'Respiracion ausente', 'Respiracion normal', 'No estoy seguro'],
+  1: ['Puede hablar y toser con fuerza', 'Puede hablar pero la tos es débil', 'No puede hablar, tos débil o ineficaz', 'No emite sonidos ni puede toser'],
+  2: ['Respira con dificultad o ruidos', 'Respiración ausente', 'Respiración normal', 'No estoy seguro'],
   3: ['Color normal', 'Enrojecimiento en rostro', 'Color azulado (cianosis)'],
   4: ['Consciente y alerta', 'Agitado o confundido', 'Inconsciente'],
-  5: ['Atragantamiento con comida u objeto', 'Compresion del cuello o torax', 'Ahogamiento por agua', 'Inhalacion de humo o gases', 'Posicion que dificulta respirar', 'No estoy seguro'],
+  5: ['Atragantamiento con comida u objeto', 'Compresión del cuello o tórax', 'Ahogamiento por agua', 'Inhalación de humo o gases', 'Posición que dificulta respirar', 'No estoy seguro'],
 };
 
 const QUEMADURA_OPTIONS: Record<number, string[]> = {
@@ -151,11 +151,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
-    // Bandera de "este effect ya quedó obsoleto" — se activa en el
-    // cleanup, que React llama automáticamente en cuanto `module`
-    // cambia (o el componente se desmonta). Cualquier código async
-    // que siga corriendo después de eso debe ignorar su propio
-    // resultado en vez de tocar el estado del NUEVO módulo.
+  
     let cancelled = false;
 
     const initConsultation = async () => {

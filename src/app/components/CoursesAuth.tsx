@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, GraduationCap, AlertCircle, CheckCircle2 } from 'lucide-react';
 import * as CoursesAPI from '../services/coursesApi';
@@ -11,6 +11,8 @@ interface CoursesAuthProps {
 
 type Mode = 'login' | 'register';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
 export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -21,6 +23,11 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [showForgot, setShowForgot] = useState(false);
+
+  // ── Flujo de Google: si es cuenta nueva, pedimos username aquí ──
+  const [googlePendingToken, setGooglePendingToken] = useState<string | null>(null);
+  const [googleUsername, setGoogleUsername] = useState('');
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const resetMessages = () => {
     setError('');
@@ -67,6 +74,73 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
     }
   };
 
+  const handleGoogleCredential = async (credential: string) => {
+    resetMessages();
+    setLoading(true);
+    try {
+      const result = await CoursesAPI.googleLogin(credential);
+      if (result.needsUsername) {
+        setGooglePendingToken(result.pendingToken);
+        setGoogleUsername(result.suggestedUsername);
+      } else {
+        onSuccess();
+      }
+    } catch (err) {
+      setError(err instanceof CoursesAPI.ApiError ? err.message : 'No se pudo iniciar sesión con Google.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleUsernameSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!googlePendingToken) return;
+    resetMessages();
+    setLoading(true);
+    try {
+      await CoursesAPI.completeGoogleSignup(googlePendingToken, googleUsername);
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof CoursesAPI.ApiError ? err.message : 'No se pudo completar el registro.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Inicializa el botón de Google una vez que el script GSI cargó
+  useEffect(() => {
+    if (showForgot || googlePendingToken || !GOOGLE_CLIENT_ID) return;
+
+    let cancelled = false;
+    let attempts = 0;
+
+    const tryInit = () => {
+      if (cancelled) return;
+      if (!window.google || !googleButtonRef.current) {
+        if (attempts++ < 40) setTimeout(tryInit, 150);
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => handleGoogleCredential(response.credential),
+        ux_mode: 'popup',
+      });
+      googleButtonRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: mode === 'register' ? 'signup_with' : 'signin_with',
+        shape: 'pill',
+        width: 300,
+      });
+    };
+
+    tryInit();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showForgot, googlePendingToken, mode]);
+
   if (showForgot) {
     return <ForgotPassword onBack={() => setShowForgot(false)} />;
   }
@@ -92,125 +166,188 @@ export function CoursesAuth({ onSuccess, onBack }: CoursesAuthProps) {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">
-              {mode === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'}
+              {googlePendingToken ? 'Un último paso' : mode === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'}
             </h2>
-            <p className="text-sm text-white/70">Aprende primeros auxilios jugando</p>
+            <p className="text-sm text-white/70">
+              {googlePendingToken ? 'Elige tu nombre de usuario' : 'Aprende primeros auxilios jugando'}
+            </p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100">
-          <button
-            onClick={() => { setMode('login'); resetMessages(); }}
-            className={`flex-1 py-3 text-sm font-medium transition ${
-              mode === 'login' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400'
-            }`}
-          >
-            Iniciar sesión
-          </button>
-          <button
-            onClick={() => { setMode('register'); resetMessages(); }}
-            className={`flex-1 py-3 text-sm font-medium transition ${
-              mode === 'register' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400'
-            }`}
-          >
-            Registrarme
-          </button>
-        </div>
-
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {mode === 'register' && (
+        {googlePendingToken ? (
+          // ── Paso 2 del login con Google: pedir username ──────────
+          <form onSubmit={handleGoogleUsernameSubmit} className="p-6 space-y-4">
+            <p className="text-sm text-gray-500">
+              Ya verificamos tu cuenta de Google. Solo falta que elijas un nombre de usuario para terminar.
+            </p>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Nombre de usuario
               </label>
               <input
                 type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                value={googleUsername}
+                onChange={e => setGoogleUsername(e.target.value)}
                 required
                 minLength={3}
+                autoFocus
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               />
             </div>
-          )}
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              required
-              minLength={6}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-            />
-          </div>
-
-          {mode === 'login' && (
-            <button
-              type="button"
-              onClick={() => setShowForgot(true)}
-              className="text-xs text-emerald-600 font-medium underline"
-            >
-              ¿Olvidaste tu contraseña?
-            </button>
-          )}
-
-          {error && (
-            <div className="space-y-2">
+            {error && (
               <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
                 <AlertCircle size={14} className="flex-shrink-0" />
                 {error}
               </div>
-              {needsVerification && (
+            )}
+
+            <motion.button
+              type="submit"
+              whileTap={{ scale: 0.97 }}
+              disabled={loading}
+              className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-60"
+            >
+              {loading ? 'Creando cuenta...' : 'Continuar'}
+            </motion.button>
+
+            <button
+              type="button"
+              onClick={() => { setGooglePendingToken(null); resetMessages(); }}
+              className="w-full text-xs text-gray-400 font-medium"
+            >
+              Cancelar
+            </button>
+          </form>
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="flex border-b border-gray-100">
+              <button
+                onClick={() => { setMode('login'); resetMessages(); }}
+                className={`flex-1 py-3 text-sm font-medium transition ${
+                  mode === 'login' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400'
+                }`}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                onClick={() => { setMode('register'); resetMessages(); }}
+                className={`flex-1 py-3 text-sm font-medium transition ${
+                  mode === 'register' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400'
+                }`}
+              >
+                Registrarme
+              </button>
+            </div>
+
+            {/* Google */}
+            {GOOGLE_CLIENT_ID && (
+              <div className="px-6 pt-5">
+                <div ref={googleButtonRef} className="flex justify-center" />
+                <div className="my-4 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-gray-100" />
+                  <span className="text-[11px] uppercase tracking-wide text-gray-300">o con tu correo</span>
+                  <div className="h-px flex-1 bg-gray-100" />
+                </div>
+              </div>
+            )}
+
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className={`p-6 space-y-4 ${GOOGLE_CLIENT_ID ? 'pt-0' : ''}`}>
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    Nombre de usuario
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    minLength={3}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  required
+                  minLength={6}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-800 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                />
+              </div>
+
+              {mode === 'login' && (
                 <button
                   type="button"
-                  onClick={handleResend}
+                  onClick={() => setShowForgot(true)}
                   className="text-xs text-emerald-600 font-medium underline"
                 >
-                  Reenviar correo de verificación
+                  ¿Olvidaste tu contraseña?
                 </button>
               )}
-            </div>
-          )}
 
-          {successMsg && (
-            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-              <CheckCircle2 size={14} className="flex-shrink-0" />
-              {successMsg}
-            </div>
-          )}
+              {error && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    {error}
+                  </div>
+                  {needsVerification && (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      className="text-xs text-emerald-600 font-medium underline"
+                    >
+                      Reenviar correo de verificación
+                    </button>
+                  )}
+                </div>
+              )}
 
-          <motion.button
-            type="submit"
-            whileTap={{ scale: 0.97 }}
-            disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-60"
-          >
-            {loading
-              ? 'Cargando...'
-              : mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-          </motion.button>
-        </form>
+              {successMsg && (
+                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <CheckCircle2 size={14} className="flex-shrink-0" />
+                  {successMsg}
+                </div>
+              )}
+
+              <motion.button
+                type="submit"
+                whileTap={{ scale: 0.97 }}
+                disabled={loading}
+                className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-60"
+              >
+                {loading
+                  ? 'Cargando...'
+                  : mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+              </motion.button>
+            </form>
+          </>
+        )}
       </motion.div>
     </div>
   );
