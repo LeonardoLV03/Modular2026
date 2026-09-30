@@ -28,7 +28,59 @@ const APP_URL = process.env.APP_URL || 'http://localhost:5173';
 // directo a un servidor SMTP como Gmail.
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'healthcareaid9@gmail.com';
-const BREVO_SENDER_NAME = 'Modular2026';
+const BREVO_SENDER_NAME = 'Health Care Aid';
+const LOGO_URL = `${process.env.APP_URL || 'http://localhost:5173'}/logo-email.png`;
+
+// ── Plantilla base para los correos transaccionales ─────────────
+function emailLayout({ preheader, heading, bodyHtml, footerNote }) {
+  return `
+  <!DOCTYPE html>
+  <html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Health Care Aid</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #eef2f6; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <span style="display: none; max-height: 0; overflow: hidden; opacity: 0;">${preheader}</span>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #eef2f6; padding: 32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(15, 15, 26, 0.08);">
+            <!-- Header -->
+            <tr>
+              <td style="background-color: #0f0f1a; padding: 28px 24px; text-align: center;">
+                <img src="${LOGO_URL}" alt="Health Care Aid" width="56" height="56" style="display: block; margin: 0 auto 10px; border-radius: 12px;" />
+                <p style="margin: 0; color: #ffffff; font-size: 16px; font-weight: 600; letter-spacing: 0.3px;">Health Care Aid</p>
+                <p style="margin: 2px 0 0; color: rgba(255,255,255,0.45); font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;">Primeros auxilios &amp; emergencias</p>
+              </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+              <td style="padding: 32px 28px 8px;">
+                <h1 style="margin: 0 0 12px; color: #1f2937; font-size: 20px; font-weight: 700;">${heading}</h1>
+                ${bodyHtml}
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding: 20px 28px 28px;">
+                <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">${footerNote}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color: #f9fafb; padding: 16px 28px; text-align: center; border-top: 1px solid #f0f1f3;">
+                <p style="margin: 0; color: #c1c6cf; font-size: 11px;">© ${new Date().getFullYear()} Health Care Aid · Sistema de apoyo en primeros auxilios</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+}
 
 async function sendEmail({ to, toName, subject, html }) {
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -60,17 +112,30 @@ async function sendVerificationEmail(email, username, token) {
     await sendEmail({
       to: email,
       toName: username,
-      subject: 'Verifica tu cuenta — Modular2026',
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #1f2937;">¡Hola, ${username}!</h2>
-          <p style="color: #4b5563;">Gracias por registrarte en Modular2026. Confirma tu cuenta para empezar a estudiar.</p>
-          <a href="${verifyLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">
-            Verificar mi cuenta
-          </a>
-          <p style="color: #9ca3af; font-size: 12px;">Si no creaste esta cuenta, ignora este correo. Este enlace expira en 24 horas.</p>
-        </div>
-      `,
+      subject: 'Verifica tu cuenta — Health Care Aid',
+      html: emailLayout({
+        preheader: `Confirma tu cuenta, ${username}, para empezar a estudiar en Health Care Aid.`,
+        heading: `¡Hola, ${username}! 👋`,
+        bodyHtml: `
+          <p style="margin: 0 0 20px; color: #4b5563; font-size: 14px; line-height: 1.6;">
+            Gracias por registrarte en <strong>Health Care Aid</strong>. Estás a un paso de empezar a aprender primeros auxilios de forma práctica y jugando. Confirma tu correo para activar tu cuenta.
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 20px;">
+            <tr>
+              <td style="border-radius: 10px; background-color: #6366f1;">
+                <a href="${verifyLink}" style="display: inline-block; padding: 13px 28px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 10px;">
+                  Verificar mi cuenta
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
+            Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
+            <a href="${verifyLink}" style="color: #6366f1; word-break: break-all;">${verifyLink}</a>
+          </p>
+        `,
+        footerNote: 'Si no creaste esta cuenta, puedes ignorar este correo con confianza. Este enlace expira en 24 horas.',
+      }),
     });
   } catch (error) {
     console.error('Error enviando correo de verificación:', error.message);
@@ -84,17 +149,30 @@ async function sendResetEmail(email, username, token) {
     await sendEmail({
       to: email,
       toName: username,
-      subject: 'Recupera tu contraseña — Modular2026',
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2 style="color: #1f2937;">Hola, ${username}</h2>
-          <p style="color: #4b5563;">Recibimos una solicitud para restablecer tu contraseña. Este enlace expira en 1 hora.</p>
-          <a href="${resetLink}" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 16px 0;">
-            Restablecer contraseña
-          </a>
-          <p style="color: #9ca3af; font-size: 12px;">Si no solicitaste esto, ignora este correo.</p>
-        </div>
-      `,
+      subject: 'Recupera tu contraseña — Health Care Aid',
+      html: emailLayout({
+        preheader: `Restablece tu contraseña de Health Care Aid, ${username}.`,
+        heading: `Hola, ${username}`,
+        bodyHtml: `
+          <p style="margin: 0 0 20px; color: #4b5563; font-size: 14px; line-height: 1.6;">
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Health Care Aid</strong>. Haz clic en el botón para crear una nueva.
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 20px;">
+            <tr>
+              <td style="border-radius: 10px; background-color: #6366f1;">
+                <a href="${resetLink}" style="display: inline-block; padding: 13px 28px; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 10px;">
+                  Restablecer contraseña
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
+            Si el botón no funciona, copia y pega este enlace en tu navegador:<br />
+            <a href="${resetLink}" style="color: #6366f1; word-break: break-all;">${resetLink}</a>
+          </p>
+        `,
+        footerNote: 'Si no solicitaste esto, ignora este correo; tu contraseña actual seguirá funcionando. Este enlace expira en 1 hora.',
+      }),
     });
   } catch (error) {
     console.error('Error enviando correo de reseteo:', error.message);
