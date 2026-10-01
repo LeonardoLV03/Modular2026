@@ -95,7 +95,7 @@ export default function App() {
   };
 
   const showChat    = !!selectedModule;
-  const showWelcome = !selectedModule && !showAdmin && !showCourses;
+  
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
