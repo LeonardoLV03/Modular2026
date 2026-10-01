@@ -1,10 +1,11 @@
 import { motion } from 'motion/react';
-import { Heart, Droplet, Wind, Flame, MousePointerClick, Bone, FlaskConical, Bug, Zap, Sun, Brain } from 'lucide-react';
+import { Heart, Droplet, Wind, Flame, MousePointerClick, Bone, FlaskConical, Bug, Zap, Sun, Brain, Menu } from 'lucide-react';
 import Logo from '../assets/logo.svg';
 import { Module } from '../App';
 
 interface WelcomePanelProps {
   onSelect: (module: Module) => void;
+  onOpenMenu?: () => void;
 }
 
 const hints: { name: string; module: Module; icon: any; color: string; bg: string }[] = [
@@ -20,9 +21,19 @@ const hints: { name: string; module: Module; icon: any; color: string; bg: strin
   { name: 'Convulsion', module: 'convulsion', icon: Brain, color: '#6366f1', bg: 'rgba(99,102,241,0.13)'},
 ];
 
-export function WelcomePanel({ onSelect }: WelcomePanelProps) {
+export function WelcomePanel({ onSelect, onOpenMenu }: WelcomePanelProps) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-gray-50 p-8">
+    <div className="relative flex flex-1 flex-col items-center justify-center bg-gray-50 p-8">
+      {onOpenMenu && (
+        <button
+          onClick={onOpenMenu}
+          aria-label="Abrir menú"
+          className="absolute top-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm md:hidden"
+        >
+          <Menu size={20} className="text-gray-700" />
+        </button>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

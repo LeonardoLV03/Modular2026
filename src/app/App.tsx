@@ -23,6 +23,7 @@ export default function App() {
   const [showCourses, setShowCourses] = useState(false);
   const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
   const [isCoursesUser, setIsCoursesUser] = useState(() => !!CoursesAPI.getToken());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const currentPath = window.location.pathname;
   const urlToken = new URLSearchParams(window.location.search).get('token');
@@ -49,6 +50,7 @@ export default function App() {
     setSelectedModule(module);
     setShowAdmin(false);
     setShowCourses(false);
+    setMobileMenuOpen(false);
   };
 
   const handleCoursesLogout = () => {
@@ -64,12 +66,14 @@ export default function App() {
     setSelectedModule(null);
     setShowCourses(false);
     setShowAdmin(true);
+    setMobileMenuOpen(false);
   };
 
   const handleShowCourses = () => {
     setSelectedModule(null);
     setShowAdmin(false);
     setShowCourses(true);
+    setMobileMenuOpen(false);
   };
 
   const handleBackToMenu = () => {
@@ -92,15 +96,23 @@ export default function App() {
 
   const showChat    = !!selectedModule;
   const showWelcome = !selectedModule && !showAdmin && !showCourses;
-  const showDetail  = showChat || showAdmin || showCourses;
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
       <TermsModal />
+
+      {/* Fondo oscuro detrás del menú lateral, solo en móvil */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+        />
+      )}
+
       <aside
-        className={`${
-          showDetail ? 'hidden md:flex' : 'flex'
-        } w-full md:w-72 flex-shrink-0 flex-col`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex-col transition-transform duration-300 ease-in-out md:static md:z-auto md:flex md:translate-x-0 ${
+          mobileMenuOpen ? 'flex translate-x-0' : 'hidden -translate-x-full'
+        }`}
       >
         <Sidebar
           selectedModule={selectedModule}
@@ -112,11 +124,7 @@ export default function App() {
         />
       </aside>
 
-      <main
-        className={`${
-          showWelcome ? 'hidden md:flex' : 'flex'
-        } flex-1 flex-col overflow-hidden md:m-3 md:rounded-2xl`}
-      >
+      <main className="flex flex-1 flex-col overflow-hidden md:m-3 md:rounded-2xl">
         {showChat ? (
           <ChatInterface module={selectedModule} onReset={handleReset} />
         ) : showAdmin ? (
@@ -132,7 +140,7 @@ export default function App() {
             <CoursesAuth onSuccess={handleCoursesLoginSuccess} onBack={handleBackToMenu} />
           )
         ) : (
-          <WelcomePanel onSelect={handleModuleSelect} />
+          <WelcomePanel onSelect={handleModuleSelect} onOpenMenu={() => setMobileMenuOpen(true)} />
         )}
       </main>
     </div>
