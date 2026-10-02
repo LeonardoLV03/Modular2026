@@ -8,6 +8,17 @@ import { EmergencyAlert } from './EmergencyAlert';
 import * as PrologAPI from '../services/prologApi';
 import * as StatsAPI from '../services/statsApi';
 
+import iconDesmayo from '../assets/emergencias/desmayo.png';
+import iconHemorragia from '../assets/emergencias/hemorragia.png';
+import iconAsfixia from '../assets/emergencias/asfixia.png';
+import iconQuemadura from '../assets/emergencias/quemadura.png';
+import iconFractura from '../assets/emergencias/fractura.png';
+import iconIntoxicacion from '../assets/emergencias/intoxicacion.png';
+import iconPicadura from '../assets/emergencias/picadura.png';
+import iconDescarga from '../assets/emergencias/descarga.png';
+import iconInsolacion from '../assets/emergencias/insolacion.png';
+import iconConvulsion from '../assets/emergencias/convulsion.png';
+
 interface Message {
   id: string;
   text: string;
@@ -45,6 +56,19 @@ const MODULE_COLORS: Record<string, { gradient: string; light: string }> = {
   descarga:    { gradient: 'from-yellow-500 to-yellow-600', light: 'bg-yellow-50'  },
   insolacion:  { gradient: 'from-red-500 to-orange-500',    light: 'bg-red-50'     },
   convulsion:  { gradient: 'from-indigo-500 to-indigo-600', light: 'bg-indigo-50'  },
+};
+
+const MODULE_ICONS: Record<string, string> = {
+  desmayo: iconDesmayo,
+  hemorragia: iconHemorragia,
+  asfixia: iconAsfixia,
+  quemadura: iconQuemadura,
+  fractura: iconFractura,
+  intoxicacion: iconIntoxicacion,
+  picadura: iconPicadura,
+  descarga: iconDescarga,
+  insolacion: iconInsolacion,
+  convulsion: iconConvulsion,
 };
 
 const QUICK_REPLIES = ['Sí', 'No', 'No estoy seguro'];
@@ -144,6 +168,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
 
   const label        = MODULE_LABELS[module!] ?? module ?? '';
   const currentColor = MODULE_COLORS[module!] ?? MODULE_COLORS['desmayo'];
+  const currentIcon  = MODULE_ICONS[module!] ?? iconDesmayo;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -308,8 +333,8 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
             <h2 className="text-xl text-white">{label}</h2>
             <p className="text-sm text-white/90">Asistente de primeros auxilios</p>
           </div>
-          <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-white text-2xl">
-            +
+          <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md flex-shrink-0">
+            <img src={currentIcon} alt={label} className="w-full h-full object-cover" />
           </div>
         </div>
       </motion.div>
@@ -367,13 +392,14 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
           className="p-4 bg-white border-t border-gray-200"
         >
           <div className="flex items-end gap-2">
-                        <div className="flex-1 bg-gray-100 rounded-3xl px-5 py-3">
+            <div className="flex-1 bg-gray-100 rounded-3xl px-5 py-3">
               <input
                 type="text"
                 value={input}
-                readOnly
-                placeholder="Selecciona una opción arriba..."
-                className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-500 cursor-default"
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Selecciona tu respuesta..."
+                className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-500"
                 disabled={isLoading}
               />
             </div>

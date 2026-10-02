@@ -248,42 +248,16 @@ export function DiagnosisCard({
           </div>
         )}
 
-        {/* Resultados del sistema Prolog (solo para módulos con % de confianza) */}
+        {/* Precisión del sistema Prolog (solo para módulos con % de confianza) —
+            ya no repetimos el "Tipo de caso" ni la lista de acciones aquí,
+            porque es la misma información que ya se muestra abajo en
+            "Qué hacer ahora"; Aldo detectó la duplicación. */}
         {topResults.length > 0 && (
-          <div className="mb-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 bg-gradient-to-br ${data.gradient} rounded-lg flex items-center justify-center`}>
-                <AlertCircle size={18} className="text-white" />
-              </div>
-              <h4 className="text-lg text-gray-800">Resultado del análisis:</h4>
-            </div>
-            {topResults.map((item, index) => {
-              const actionList = item.action
-                ? item.action.split(/\n|;|\r/).map((s) => s.trim()).filter(Boolean)
-                : [];
-              return (
-                <div key={`${item.caseType}-${index}`} className={`rounded-2xl p-4 ${data.bgColor}`}>
-                  <p className="text-gray-700 mb-1">
-                    <span className="font-semibold">{data.caseLabel}:</span> {item.caseType}
-                  </p>
-                  <p className="text-gray-500 text-sm mb-2">
-                    Precisión: {item.level}
-                  </p>
-                  {actionList.length > 0 && (
-                    <div className="space-y-2">
-                      {actionList.map((act, i) => (
-                        <div key={i} className="flex gap-3 items-start p-2 rounded-xl bg-white/60">
-                          <div className={`mt-0.5 w-6 h-6 bg-gradient-to-br ${data.gradient} text-white rounded-full flex items-center justify-center flex-shrink-0 text-xs shadow`}>
-                            {i + 1}
-                          </div>
-                          <p className="text-gray-700 flex-1 leading-relaxed text-sm">{act}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className={`mb-5 flex items-center gap-2 rounded-2xl p-4 ${data.bgColor}`}>
+            <span className="text-xs uppercase tracking-wide text-gray-500">Precisión:</span>
+            <span className={`text-sm font-semibold px-3 py-1 rounded-full bg-gradient-to-br ${data.gradient} text-white`}>
+              {topResults[0].level}
+            </span>
           </div>
         )}
 
