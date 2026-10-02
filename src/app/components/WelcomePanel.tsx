@@ -69,8 +69,8 @@ export function WelcomePanel({ onSelect, onOpenMenu }: WelcomePanelProps) {
           aquí abajo, para comenzar la consulta guiada paso a paso.
         </motion.p>
 
-        {/* Chips de módulos en Grid de 3 columnas — ahora clicables */}
-        <div className="grid w-full grid-cols-3 gap-3 px-4">
+        {/* Chips de módulos — 2 columnas en móvil (más ancho por chip), 3 desde sm */}
+        <div className="grid w-full grid-cols-2 gap-3 px-4 sm:grid-cols-3">
           {hints.map((h, i) => (
             <motion.button
               key={h.name}
@@ -81,11 +81,11 @@ export function WelcomePanel({ onSelect, onOpenMenu }: WelcomePanelProps) {
               transition={{ delay: 0.3 + i * 0.07 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-shadow hover:shadow-md"
+              className="flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-medium transition-shadow hover:shadow-md sm:text-sm"
               style={{ background: h.bg, color: h.color }}
             >
               <h.icon size={13} className="flex-shrink-0" />
-              <span className="truncate">{h.name}</span>
+              <span className="leading-tight">{h.name}</span>
             </motion.button>
           ))}
         </div>
