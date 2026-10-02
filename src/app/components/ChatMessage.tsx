@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import mascot from '../assets/mascot.svg';
 
 interface Message {
   id: string;
@@ -36,8 +37,8 @@ export function ChatMessage({ message, moduleColor }: ChatMessageProps) {
     >
       {/* Avatar - Bot */}
       {!message.isUser && (
-        <div className={`w-10 h-10 bg-gradient-to-br ${moduleColor} rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-lg`}>
-          <span className="text-lg">+</span>
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-lg bg-white">
+          <img src={mascot} alt="Asistente" className="w-full h-full object-contain p-0.5" />
         </div>
       )}
 
