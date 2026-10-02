@@ -367,14 +367,13 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
           className="p-4 bg-white border-t border-gray-200"
         >
           <div className="flex items-end gap-2">
-            <div className="flex-1 bg-gray-100 rounded-3xl px-5 py-3">
+                        <div className="flex-1 bg-gray-100 rounded-3xl px-5 py-3">
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Selecciona tu respuesta..."
-                className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-500"
+                readOnly
+                placeholder="Selecciona una opción arriba..."
+                className="w-full bg-transparent outline-none text-gray-800 placeholder:text-gray-500 cursor-default"
                 disabled={isLoading}
               />
             </div>

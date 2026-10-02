@@ -1,9 +1,6 @@
 % ============================================================
 %   BACKEND HTTP - SISTEMA DE PRIMEROS AUXILIOS
 %   Puerto: 5000
-%
-%   Módulos implementados: hemorragia, desmayo
-%   Estructura lista para: asfixia, quemadura
 % ============================================================
 
 :- encoding(utf8).
@@ -1261,7 +1258,151 @@ diagnostico(convulsion, Respuestas, EsEmergencia, Severidad, Recomendaciones) :-
             'Llama al 911 si hay segunda convulsión, dificultad respiratoria o no recupera la consciencia'
         ]
     ).
-    
+
+% ============================================================
+% RESULTADOS DE ANÁLISIS PARA MÓDULOS ADICIONALES
+% (desmayo, fractura, intoxicación, picadura, descarga, insolación, convulsión)
+% Reutiliza el diagnostico/5 y el nivel_X ya existentes — no cambia
+% EsEmergencia/Severidad/Recomendaciones, solo arma el bloque "results".
+% ============================================================
+
+% --- Acciones resumidas por nivel ---
+accion_desmayo(leve,
+    'Siéntala con la cabeza entre las rodillas o recuéstala con piernas elevadas, afloja la ropa, ventila el área, no la levantes bruscamente').
+accion_desmayo(mediano,
+    'Acuéstala y eleva las piernas 30-45 cm, afloja la ropa, verifica respiración y pulso, llama al 911 si no despierta en 1-2 minutos').
+accion_desmayo(grave,
+    'Llama al 911 de inmediato, verifica respiración y pulso, inicia RCP si no respira, coloca en posición lateral de seguridad si respira').
+
+accion_fractura(leve,
+    'Inmoviliza la zona sin apoyar peso, aplica hielo envuelto en tela 15-20 min, eleva la extremidad, consulta a urgencias para radiografía').
+accion_fractura(moderada,
+    'Inmoviliza con férula improvisada, no intentes realinear el hueso, aplica hielo 20 min, traslada a urgencias para radiografía').
+accion_fractura(grave,
+    'Llama al 911, no muevas a la persona si sospechas lesión en columna, cubre hueso expuesto con gasa limpia sin presionar, mantén calmada y abrigada').
+
+accion_intoxicacion(leve,
+    'Llama a Centro de Toxicología o urgencias, identifica la sustancia y el tiempo transcurrido, mantén en reposo y observación').
+accion_intoxicacion(moderada,
+    'Llama al Centro de Toxicología de inmediato, identifica sustancia y cantidad, no induzcas el vómito, mantén despierta y vigilada').
+accion_intoxicacion(grave,
+    'Llama al 911 de inmediato, si está inconsciente y respira colócala de lado, si no respira inicia RCP, no induzcas el vómito').
+
+accion_picadura(leve,
+    'Retira el aguijón raspando con una tarjeta, lava con agua y jabón, aplica hielo 10-15 min, observa señales de reacción alérgica').
+accion_picadura(moderada,
+    'Lava la herida con agua y jabón 5 minutos, traslada a urgencias para evaluación, aplica hielo, vigila reacción alérgica').
+accion_picadura(grave,
+    'Llama al 911 de inmediato, usa adrenalina (EpiPen) si hay disponible y dificultad para respirar, inmoviliza la extremidad, no hagas torniquete ni succiones el veneno').
+
+accion_descarga(leve,
+    'Acude a urgencias para evaluación aunque te sientas bien, informa el tipo de corriente y tiempo de contacto, observa palpitaciones o dolor de pecho').
+accion_descarga(moderada,
+    'Traslada a urgencias para evaluación cardíaca, cubre quemaduras con gasa limpia y seca, monitorea respiración y pulso').
+accion_descarga(grave,
+    'Llama al 911, nunca toques a la persona si sigue en contacto con la corriente, corta la electricidad antes de acercarte, inicia RCP si no respira').
+
+accion_insolacion(leve,
+    'Lleva a un lugar fresco y con sombra, bebe agua a sorbos moderados, aplica un paño húmedo frío en frente y cuello, descansa evitando el sol').
+accion_insolacion(moderada,
+    'Retira del calor a un lugar fresco y ventilado, afloja la ropa, ofrece agua a sorbos frecuentes, aplica paños húmedos fríos en cuello y muñecas').
+accion_insolacion(grave,
+    'Llama al 911 de inmediato, enfría el cuerpo con agua fría en cuello, axilas e ingles, si está inconsciente colócala de lado y no le des líquidos por la boca').
+
+accion_convulsion(leve,
+    'Coloca en posición lateral de seguridad al terminar, deja que descanse en lugar tranquilo, no la dejes sola, comunica el episodio al médico').
+accion_convulsion(moderada,
+    'Protege la cabeza y despeja el área, cronometra la duración, coloca en posición lateral de seguridad al terminar, traslada a urgencias').
+accion_convulsion(grave,
+    'Llama al 911 de inmediato, protege la cabeza, no introduzcas nada en la boca ni la sujetes con fuerza, posición lateral de seguridad al terminar').
+
+% --- Wrappers que arman el bloque "results" reusando diagnostico/5 y nivel_X ---
+
+diagnostico_desmayo_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(desmayo, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_desmayo_a_sintomas(Respuestas, Sintomas),
+    ( nivel_desmayo(grave, Sintomas)   -> Nivel = grave
+    ; nivel_desmayo(mediano, Sintomas) -> Nivel = mediano
+    ;                                     Nivel = leve
+    ),
+    atomic_list_concat([desmayo, '_', Nivel], Caso),
+    accion_desmayo(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_fractura_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(fractura, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_fractura_a_sintomas(Respuestas, Sintomas),
+    ( nivel_fractura(grave, Sintomas)    -> Nivel = grave
+    ; nivel_fractura(moderada, Sintomas) -> Nivel = moderada
+    ;                                       Nivel = leve ),
+    atomic_list_concat([fractura, '_', Nivel], Caso),
+    accion_fractura(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_intoxicacion_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(intoxicacion, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_intoxicacion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_intoxicacion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_intoxicacion(moderada, Sintomas) -> Nivel = moderada
+    ;                                          Nivel = leve ),
+    atomic_list_concat([intoxicacion, '_', Nivel], Caso),
+    accion_intoxicacion(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_picadura_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(picadura, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_picadura_a_sintomas(Respuestas, Sintomas),
+    ( nivel_picadura(grave, Sintomas)    -> Nivel = grave
+    ; nivel_picadura(moderada, Sintomas) -> Nivel = moderada
+    ;                                      Nivel = leve ),
+    atomic_list_concat([picadura, '_', Nivel], Caso),
+    accion_picadura(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_descarga_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(descarga, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_descarga_a_sintomas(Respuestas, Sintomas),
+    ( nivel_descarga(grave, Sintomas)    -> Nivel = grave
+    ; nivel_descarga(moderada, Sintomas) -> Nivel = moderada
+    ;                                       Nivel = leve ),
+    atomic_list_concat([descarga, '_', Nivel], Caso),
+    accion_descarga(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_insolacion_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(insolacion, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_insolacion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_insolacion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_insolacion(moderada, Sintomas) -> Nivel = moderada
+    ;                                        Nivel = leve ),
+    atomic_list_concat([insolacion, '_', Nivel], Caso),
+    accion_insolacion(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
+diagnostico_convulsion_full(Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
+    diagnostico(convulsion, Respuestas, EsEmergencia, Severidad, Recomendaciones),
+    respuestas_convulsion_a_sintomas(Respuestas, Sintomas),
+    ( nivel_convulsion(grave, Sintomas)    -> Nivel = grave
+    ; nivel_convulsion(moderada, Sintomas) -> Nivel = moderada
+    ;                                        Nivel = leve ),
+    atomic_list_concat([convulsion, '_', Nivel], Caso),
+    accion_convulsion(Nivel, Accion),
+    Pct = 100,
+    Resultados = [res{caseType:Caso, confidence:100, action:Accion, level:'EXACTO'}],
+    ExactOnly = true.
+
 % ============================================================
 % LÓGICA DE SESIONES
 % ============================================================
@@ -1357,6 +1498,34 @@ h_diag(Request) :-
                               caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
         ; Modulo = quemadura ->
             diagnostico_quemadura(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = desmayo ->
+            diagnostico_desmayo_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = fractura ->
+            diagnostico_fractura_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = intoxicacion ->
+            diagnostico_intoxicacion_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = picadura ->
+            diagnostico_picadura_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = descarga ->
+            diagnostico_descarga_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = insolacion ->
+            diagnostico_insolacion_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
+            reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
+                              caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
+        ; Modulo = convulsion ->
+            diagnostico_convulsion_full(Respuestas, EsEmergencia, Severidad, Recs, Caso, Pct, Accion, Resultados, ExactOnly),
             reply_json_dict(_{isEmergency:EsEmergencia,severity:Severidad,recommendations:Recs,
                               caseType:Caso,confidence:Pct,action:Accion,results:Resultados,exactOnly:ExactOnly})
         ;
