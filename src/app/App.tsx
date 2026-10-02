@@ -98,7 +98,7 @@ export default function App() {
   
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0f0f1a]">
+    <div className="flex h-dvh overflow-hidden bg-[#0f0f1a]">
       <TermsModal />
 
       {/* Fondo oscuro detrás del menú lateral, solo en móvil */}
