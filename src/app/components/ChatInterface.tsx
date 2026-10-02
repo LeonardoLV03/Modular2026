@@ -151,7 +151,11 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   useEffect(() => {
-  
+    // Bandera de "este effect ya quedó obsoleto" — se activa en el
+    // cleanup, que React llama automáticamente en cuanto `module`
+    // cambia (o el componente se desmonta). Cualquier código async
+    // que siga corriendo después de eso debe ignorar su propio
+    // resultado en vez de tocar el estado del NUEVO módulo.
     let cancelled = false;
 
     const initConsultation = async () => {
@@ -311,13 +315,12 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         </div>
       </motion.div>
 
-      {/* Emergency Alert */}
-      <AnimatePresence>
-        {isEmergency && <EmergencyAlert />}
-      </AnimatePresence>
-
-      {/* Messages */}
+      {/* Messages (la alerta de emergencia vive aquí adentro para poder deslizarla si no cabe) */}
       <div className={`flex-1 overflow-y-auto px-4 py-6 space-y-4 ${currentColor.light}`}>
+        <AnimatePresence>
+          {isEmergency && <EmergencyAlert />}
+        </AnimatePresence>
+
         <AnimatePresence initial={false}>
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} moduleColor={currentColor.gradient} />
