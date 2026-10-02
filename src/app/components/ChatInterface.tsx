@@ -139,6 +139,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const [showDiagnosis, setShowDiagnosis]     = useState(false);
   const [diagnosisData, setDiagnosisData]     = useState<PrologAPI.DiagnosisResponse | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const emergencyRef    = useRef<HTMLDivElement>(null); // para enfocar la alerta de emergencia, no el final del chat
   const sessionIdRef    = useRef<string | null>(null); // guarda el sessionId más reciente, fuera del closure del effect
 
   const label        = MODULE_LABELS[module!] ?? module ?? '';
@@ -149,6 +150,15 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   };
 
   useEffect(() => { scrollToBottom(); }, [messages]);
+
+  // Cuando aparece una emergencia, el scroll debe llevarte al INICIO de esa
+  // tarjeta (no al final del chat), para que siempre se vea desde arriba y,
+  // si no cabe completa en la pantalla, puedas deslizar hacia abajo para verla.
+  useEffect(() => {
+    if (isEmergency) {
+      emergencyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isEmergency]);
 
   useEffect(() => {
     // Bandera de "este effect ya quedó obsoleto" — se activa en el
@@ -317,9 +327,11 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
 
       {/* Messages (la alerta de emergencia vive aquí adentro para poder deslizarla si no cabe) */}
       <div className={`flex-1 overflow-y-auto px-4 py-6 space-y-4 ${currentColor.light}`}>
-        <AnimatePresence>
-          {isEmergency && <EmergencyAlert />}
-        </AnimatePresence>
+        <div ref={emergencyRef}>
+          <AnimatePresence>
+            {isEmergency && <EmergencyAlert />}
+          </AnimatePresence>
+        </div>
 
         <AnimatePresence initial={false}>
           {messages.map((message) => (

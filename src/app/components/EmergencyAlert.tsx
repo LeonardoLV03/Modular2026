@@ -11,7 +11,7 @@ export function EmergencyAlert() {
       initial={{ opacity: 0, scale: 0.8, y: -20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="mx-4 mb-4"
+      className="mb-4"
     >
       <motion.div
         animate={{
