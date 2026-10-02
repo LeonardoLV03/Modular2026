@@ -13,6 +13,7 @@ interface Message {
   text: string;
   isUser: boolean;
   isQuestion?: boolean;
+  questionLabel?: string;
 }
 
 interface ChatInterfaceProps {
@@ -182,8 +183,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         sessionIdRef.current = data.sessionId;
         setTotalQuestions(data.totalQuestions);
         setCurrentQuestion(1);
-        addMessage(false, `Pregunta 1 de ${data.totalQuestions}:`, true);
-        addMessage(false, data.firstQuestion, true);
+        addMessage(false, data.firstQuestion, true, `Pregunta 1 de ${data.totalQuestions}`);
       } catch {
         if (!cancelled) {
           addMessage(false, 'No se pudo conectar con el servidor. Verifica la conexión.', false);
@@ -208,9 +208,9 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     };
   }, [module]);
 
-  const addMessage = (isUser: boolean, text: string, isQuestion = false) => {
+    const addMessage = (isUser: boolean, text: string, isQuestion = false, questionLabel?: string) => {
     const id = crypto.randomUUID();
-    setMessages((prev) => [...prev, { id, text, isUser, isQuestion }]);
+    setMessages((prev) => [...prev, { id, text, isUser, isQuestion, questionLabel }]);
   };
 
   const requestDiagnosis = async (answersList: string[]) => {
@@ -263,8 +263,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
       }
       const nextNum = data.questionNumber;
       setCurrentQuestion(nextNum);
-      addMessage(false, `Pregunta ${nextNum} de ${totalQuestions}:`, true);
-      addMessage(false, data.question, true);
+      addMessage(false, data.question, true, `Pregunta ${nextNum} de ${totalQuestions}`);
     } catch {
       addMessage(false, 'Error al obtener la siguiente pregunta.', false);
     } finally {

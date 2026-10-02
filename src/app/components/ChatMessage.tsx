@@ -5,6 +5,7 @@ interface Message {
   text: string;
   isUser: boolean;
   isQuestion?: boolean;
+  questionLabel?: string;
 }
 
 interface ChatMessageProps {
@@ -55,7 +56,9 @@ export function ChatMessage({ message, moduleColor }: ChatMessageProps) {
           {message.isQuestion && (
             <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/30">
               <span className="text-base">❓</span>
-              <span className="text-xs uppercase tracking-wider opacity-90">Pregunta</span>
+              <span className="text-xs uppercase tracking-wider opacity-90">
+                {message.questionLabel ?? 'Pregunta'}
+              </span>
             </div>
           )}
 
