@@ -271,7 +271,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     }
   };
 
-  const handleQuickResponse = (response: string) => handleSend(response);
+  const handleQuickResponse = (response: string) => setInput(response);
 
   const getQuickOptions = (): string[] => {
     const m = module!;
