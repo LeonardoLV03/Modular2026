@@ -208,7 +208,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     };
   }, [module]);
 
-    const addMessage = (isUser: boolean, text: string, isQuestion = false, questionLabel?: string) => {
+  const addMessage = (isUser: boolean, text: string, isQuestion = false, questionLabel?: string) => {
     const id = crypto.randomUUID();
     setMessages((prev) => [...prev, { id, text, isUser, isQuestion, questionLabel }]);
   };
@@ -237,8 +237,8 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     }
   };
 
-  const handleSend = async () => {
-    const text = input.trim();
+  const handleSend = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || isLoading) return;
 
     addMessage(true, text, false);
@@ -271,7 +271,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     }
   };
 
-  const handleQuickResponse = (response: string) => setInput(response);
+  const handleQuickResponse = (response: string) => handleSend(response);
 
   const getQuickOptions = (): string[] => {
     const m = module!;
@@ -314,7 +314,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         </div>
       </motion.div>
 
-      {/* Emergency Alert — ahora es un modal flotante (fixed) de EmergencyAlert.tsx,
+      {/* Emergency Alert — ahora es un modal flotante (fixed, via portal) de EmergencyAlert.tsx,
           por eso no necesita vivir dentro del área con scroll */}
       <AnimatePresence>
         {isEmergency && <EmergencyAlert />}
@@ -381,7 +381,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleSend}
+              onClick={() => handleSend()}
               className={`bg-gradient-to-r ${currentColor.gradient} text-white p-4 rounded-full shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
               disabled={!input.trim() || isLoading}
             >
