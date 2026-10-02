@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.modular.primerosauxilios',
-  appName: 'Modular',
+  appName: 'Health Care Aid',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
