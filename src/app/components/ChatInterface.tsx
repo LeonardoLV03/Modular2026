@@ -97,11 +97,11 @@ const ASFIXIA_OPTIONS: Record<number, string[]> = {
 };
 
 const QUEMADURA_OPTIONS: Record<number, string[]> = {
-  1: ['Enrojecimiento leve', 'Ampollas y dolor', 'Piel blanca o carbonizada', 'Lesión química o eléctrica', 'No estoy seguro'],
-  2: ['Brazo o pierna', 'Cara, cuello o manos', 'Torso o espalda', 'Zona extensa'],
-  3: ['Solo enrojecimiento', 'Ampollas visibles', 'Piel carbonizada/blanca', 'No estoy seguro'],
+  1: ['Enrojecimiento leve', 'Ampollas y dolor', 'Piel blanca o carbonizada', 'Lesión química', 'Lesión eléctrica', 'Quemadura por sol o radiación', 'No estoy seguro'],
+  2: ['Brazo o pierna', 'Cara, cuello o manos', 'Torso o espalda', 'Zona extensa', 'No estoy seguro'],
+  3: ['Solo enrojecimiento', 'Ampollas visibles', 'Piel carbonizada/blanca', 'Piel pelada o descamada', 'Cambio de color de la piel (manchas oscuras o amarillentas)', 'No estoy seguro'],
   4: ['Hace pocos minutos y no traté', 'Lo enfrié con agua', 'Apliqué hielo o crema', 'No estoy seguro'],
-  5: ['Dolor intenso', 'Dificultad para respirar', 'Signos de infección/necrosis', 'Ninguno de los anteriores'],
+  5: ['Dolor intenso', 'Dolor moderado', 'Dificultad para respirar', 'Signos de infección/necrosis', 'Ninguno de los anteriores'],
 };
 
 const FRACTURA_OPTIONS: Record<number, string[]> = {
