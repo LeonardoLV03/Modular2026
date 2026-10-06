@@ -1,0 +1,101 @@
+﻿id,modulo,situacion,caso_esperado,caso_obtenido,confianza_%,severidad_esperada,severidad_obtenida,alerta_911_esperada,alerta_911_obtenida,coincide_tipo,coincide_severidad,coincide_alerta,coincide_completo
+VH01,hemorragia,"Se cortó al rasurarse; unas gotas de sangre, sin dolor.",hemorragia_leve,hemorragia_leve,100,low,low,no,no,si,si,si,si
+VH02,hemorragia,"Herida con lámina en la pantorrilla; sangra sin parar, duele y se hincha.",hemorragia_media,hemorragia_media,100,medium,medium,no,no,si,si,si,si
+VH03,hemorragia,Atropellado; herida en el brazo con sangre a chorros y la persona se desmayó.,hemorragia_grave,hemorragia_grave,60,high,high,si,si,si,si,si,si
+VH04,hemorragia,"Golpe con el volante en un choque; sin heridas, pero dolor intenso en el abdomen, moretones y debilidad.",hemorragia_interna,hemorragia_interna,80,high,high,si,si,si,si,si,si
+VH05,hemorragia,Le sangra la nariz poquito tras sonarse; sin otros síntomas.,hemorragia_leve,sin_signos_de_hemorragia,80,low,low,no,no,no,si,si,no
+VH06,hemorragia,"Revisan a un niño tras jugar; no hay sangre, heridas ni dolor.",sin_signos_de_hemorragia,sin_signos_de_hemorragia,100,low,low,no,no,si,si,si,si
+VH07,hemorragia,"Cortada profunda con sierra; sangrado abundante, piel fría y pálida.",hemorragia_grave,hemorragia_grave,80,high,high,si,si,si,si,si,si
+VH08,hemorragia,Raspón amplio en el codo por caída de patineta; sangra poco y arde.,hemorragia_leve,hemorragia_leve,75,low,low,no,no,si,si,si,si
+VH09,hemorragia,Herida en la frente que sangra de forma continua; duele moderadamente.,hemorragia_media,hemorragia_media,75,medium,medium,no,no,si,si,si,si
+VH10,hemorragia,"Caída de bicicleta; dolor intenso en el costado, moretones, mareo y debilidad, sin herida.",hemorragia_interna,hemorragia_interna,100,high,high,si,si,si,si,si,si
+VD01,desmayo,"Al ver sangre se mareó, se sentó y no perdió el conocimiento.",desmayo_leve,desmayo_leve,100,low,low,no,no,si,si,si,si
+VD02,desmayo,"Se desmayó en misa; volvió en sí en 30 segundos, algo desorientada.",desmayo_mediano,desmayo_mediano,100,medium,medium,no,no,si,si,si,si
+VD03,desmayo,"Hombre cae en el gimnasio, no responde y no respira.",desmayo_grave,desmayo_grave,66,high,high,si,si,si,si,si,si
+VD04,desmayo,Se desmayó y al caer se golpeó la cabeza contra el piso; está confundida.,desmayo_grave,desmayo_grave,0,high,high,si,si,si,si,si,si
+VD05,desmayo,Se desmayó; tiene labios azulados y le cuesta respirar.,desmayo_grave,desmayo_grave,0,high,high,si,si,si,si,si,si
+VD06,desmayo,Estudiante se desmayó en el examen; despertó en segundos y ya habla bien.,desmayo_mediano,desmayo_mediano,75,medium,medium,no,no,si,si,si,si
+VD07,desmayo,Señor con problemas del corazón se siente desvanecer; no perdió la conciencia.,desmayo_grave,desmayo_grave,0,high,high,si,si,si,si,si,si
+VD08,desmayo,Lleva 3 minutos sin responder; respira con dificultad.,desmayo_grave,desmayo_grave,66,high,high,si,si,si,si,si,si
+VD09,desmayo,"Se mareó por calor en el transporte; algo confundida, no se desmayó.",desmayo_leve,desmayo_mediano,75,low,medium,no,no,no,no,si,no
+VD10,desmayo,Se desmayó y tuvo convulsiones; sigue sin despertar después de 2 minutos.,desmayo_grave,desmayo_grave,66,high,high,si,si,si,si,si,si
+VA01,asfixia,Se atragantó con un dulce; tose fuerte y puede hablar.,asfixia_leve,asfixia_leve,100,low,low,no,no,si,si,si,si
+VA02,asfixia,"Se lleva las manos al cuello, no puede hablar ni toser bien.",asfixia_moderada,asfixia_moderada,100,high,high,si,si,si,si,si,si
+VA03,asfixia,"Bebé sacado de la tina; no respira, azulado e inconsciente.",asfixia_grave,asfixia_grave,100,high,high,si,si,si,si,si,si
+VA04,asfixia,"Se atragantó con carne; no emite sonidos, labios azulados, aún consciente.",asfixia_moderada,asfixia_moderada,75,high,high,si,si,si,si,si,si
+VA05,asfixia,Tose con fuerza tras pasarse un trago de agua; ya respira bien.,asfixia_leve,asfixia_leve,100,low,low,no,no,si,si,si,si
+VA06,asfixia,Persona inconsciente tras inhalar humo en un incendio; no respira.,asfixia_grave,asfixia_grave,100,high,high,si,si,si,si,si,si
+VA07,asfixia,Niño con una moneda; puede hablar pero tose débil y está agitado.,asfixia_moderada,asfixia_leve,75,medium,low,no,no,no,no,si,no
+VA08,asfixia,"Se atragantó; tose con fuerza, la cara roja, consciente.",asfixia_leve,asfixia_leve,100,low,low,no,no,si,si,si,si
+VA09,asfixia,Tras atragantarse se desplomó; no respira.,asfixia_grave,asfixia_grave,100,high,high,si,si,si,si,si,si
+VA10,asfixia,"No puede hablar, tos ineficaz, color normal, consciente.",asfixia_moderada,asfixia_moderada,100,high,high,si,si,si,si,si,si
+VQ01,quemadura,Se quemó el dedo con un cerillo; solo está rojo.,quemadura_leve,quemadura_leve,100,low,low,no,no,si,si,si,si
+VQ02,quemadura,Aceite caliente en la pierna; ampollas y mucho dolor.,quemadura_moderada,quemadura_moderada,100,medium,medium,no,no,si,si,si,si
+VQ03,quemadura,Ropa incendiada; piel blanca y carbonizada en gran parte del cuerpo.,quemadura_grave,quemadura_grave,100,high,high,si,si,si,si,si,si
+VQ04,quemadura,Ácido de batería en la mano; la piel se oscureció.,quemadura_quimica,quemadura_quimica,100,high,high,si,si,si,si,si,si
+VQ05,quemadura,Electricista con quemadura pequeña por cable; dice sentir el corazón raro.,quemadura_electrica,quemadura_electrica,100,high,high,si,si,si,si,si,si
+VQ06,quemadura,Tarde en la alberca; hombros pelados y con dolor moderado.,quemadura_radiacion,quemadura_radiacion,100,low,low,no,no,si,si,si,si
+VQ07,quemadura,Le salpicó agua hirviendo en el pecho; salieron ampollas.,quemadura_moderada,quemadura_moderada,100,medium,medium,no,no,si,si,si,si
+VQ08,quemadura,"Tocó el escape de la moto; enrojecimiento en la pierna, se puso crema.",quemadura_leve,quemadura_leve,100,low,low,no,no,si,si,si,si
+VQ09,quemadura,Quemadura por fuego en la cara con dificultad para respirar.,quemadura_grave,quemadura_grave,100,high,high,si,si,si,si,si,si
+VQ10,quemadura,Se le cayó cal viva en el brazo; manchas amarillentas.,quemadura_quimica,quemadura_quimica,100,high,high,si,si,si,si,si,si
+VF01,fractura,"Se dobló la muñeca jugando; hinchada, la mueve con algo de dolor.",fractura_leve,fractura_leve,100,low,low,no,no,si,si,si,si
+VF02,fractura,"Caída en escaleras; tobillo deformado, no lo puede mover.",fractura_moderada,fractura_moderada,100,medium,medium,no,no,si,si,si,si
+VF03,fractura,Hueso del antebrazo saliendo por la piel.,fractura_grave,fractura_grave,100,high,high,si,si,si,si,si,si
+VF04,fractura,Clavado en alberca poco profunda; dolor de cuello y hormigueo en los brazos.,fractura_grave,fractura_grave,25,high,high,si,si,si,si,si,si
+VF05,fractura,Machucón en un dedo de la mano con la puerta; hinchado.,fractura_leve,fractura_leve,100,low,low,no,no,si,si,si,si
+VF06,fractura,"Caída sobre el hombro; brazo deformado, dolor muy intenso.",fractura_moderada,fractura_moderada,75,medium,medium,no,no,si,si,si,si
+VF07,fractura,"Pierna rota en accidente; está pálida, fría y sudando.",fractura_grave,fractura_grave,50,high,high,si,si,si,si,si,si
+VF08,fractura,"Golpe en la espinilla; moretón, camina normal con dolor leve.",fractura_leve,fractura_leve,75,low,low,no,no,si,si,si,si
+VF09,fractura,"Codazo en las costillas; dolor intenso al respirar, sin deformidad.",fractura_moderada,fractura_moderada,50,medium,medium,no,no,si,si,si,si
+VF10,fractura,Fractura de pie con herida que sangra.,fractura_grave,fractura_grave,75,high,high,si,si,si,si,si,si
+VI01,intoxicacion,"Comió pollo mal cocido hace 2 horas; vómito, consciente.",intoxicacion_leve,intoxicacion_leve,100,low,low,no,no,si,si,si,si
+VI02,intoxicacion,Niña se tomó varias pastillas de su abuela; está somnolienta.,intoxicacion_moderada,intoxicacion_moderada,66,medium,medium,no,no,si,si,si,si
+VI03,intoxicacion,Bebió thinner pensando que era agua; le arde la garganta.,intoxicacion_grave,intoxicacion_grave,33,high,high,si,si,si,si,si,si
+VI04,intoxicacion,Familia mareada y uno inconsciente por un calentador encendido.,intoxicacion_grave,intoxicacion_grave,66,high,high,si,si,si,si,si,si
+VI05,intoxicacion,"Se le derramó insecticida en la piel; ya se lavó, sin síntomas.",intoxicacion_leve,intoxicacion_leve,33,low,low,no,no,si,si,si,si
+VI06,intoxicacion,Tomó de más su medicamento para dormir; confundido y con náuseas.,intoxicacion_moderada,intoxicacion_moderada,66,medium,medium,no,no,si,si,si,si
+VI07,intoxicacion,Encontrado convulsionando junto a un frasco de veneno.,intoxicacion_grave,intoxicacion_grave,66,high,high,si,si,si,si,si,si
+VI08,intoxicacion,Comió en una fiesta; náuseas leves desde hace media hora.,intoxicacion_leve,intoxicacion_leve,100,low,low,no,no,si,si,si,si
+VI09,intoxicacion,Tomó paracetamol de más hace 4 horas; se siente bien.,intoxicacion_moderada,intoxicacion_moderada,33,medium,medium,no,no,si,si,si,si
+VI10,intoxicacion,Inhaló vapores de limpiadores mezclados; le cuesta respirar.,intoxicacion_grave,intoxicacion_grave,33,high,high,si,si,si,si,si,si
+VP01,picadura,Picadura de avispa en la pierna; dolor e hinchazón local.,picadura_leve,picadura_leve,100,low,low,no,no,si,si,si,si
+VP02,picadura,Picadura de abeja; se le cierra la garganta.,picadura_grave,picadura_grave,66,high,high,si,si,si,si,si,si
+VP03,picadura,Mordida de perro callejero en la pierna; herida profunda.,picadura_moderada,picadura_moderada,100,medium,medium,no,no,si,si,si,si
+VP04,picadura,Víbora mordió el pie en el campo.,picadura_grave,picadura_grave,0,high,high,si,si,si,si,si,si
+VP05,picadura,Alacrán en el zapato picó el pie; hormigueo que sube.,picadura_grave,picadura_grave,0,high,high,si,si,si,si,si,si
+VP06,picadura,"Hormigas en el brazo; ronchas locales que pican, sin alergias.",picadura_leve,picadura_leve,100,low,low,no,no,si,si,si,si
+VP07,picadura,Persona alérgica picada por abeja en la mano; por ahora solo dolor local.,picadura_grave,picadura_grave,66,high,high,si,si,si,si,si,si
+VP08,picadura,Mordida de araña en el torso; náuseas y debilidad.,picadura_moderada,desconocido,0,medium,medium,no,no,no,si,si,no
+VP09,picadura,Picadura de abeja en la mejilla; solo dolor local.,picadura_moderada,picadura_leve,75,medium,medium,no,no,no,si,si,no
+VP10,picadura,Mordida de murciélago en la mano; pequeña herida.,picadura_moderada,picadura_moderada,50,medium,medium,no,no,si,si,si,si
+VE01,descarga,"Toque al conectar una plancha; ya se soltó, marca leve.",descarga_leve,descarga_leve,100,low,low,no,no,si,si,si,si
+VE02,descarga,Niño sigue agarrado de un cable pelado.,descarga_grave,descarga_grave,0,high,high,si,si,si,si,si,si
+VE03,descarga,Golpeado por un rayo en el campo; inconsciente pero respira.,descarga_grave,descarga_grave,50,high,high,si,si,si,si,si,si
+VE04,descarga,Descarga en casa; quemadura de entrada en la mano y de salida en el pie.,descarga_moderada,descarga_moderada,75,medium,medium,no,no,si,si,si,si
+VE05,descarga,"Tocó un poste de luz; consciente, marcas leves.",descarga_grave,descarga_grave,25,high,high,si,si,si,si,si,si
+VE06,descarga,Descarga doméstica; quedó confundida y con dolor local.,descarga_moderada,descarga_moderada,75,medium,medium,no,no,si,si,si,si
+VE07,descarga,Descarga en casa; ahora convulsiona.,descarga_grave,descarga_grave,0,high,high,si,si,si,si,si,si
+VE08,descarga,Leve toque al tocar un enchufe; solo molestia local.,descarga_leve,descarga_leve,75,low,low,no,no,si,si,si,si
+VE09,descarga,Inconsciente tras descarga de origen desconocido; respira.,descarga_grave,descarga_grave,25,high,high,si,si,si,si,si,si
+VE10,descarga,Descarga doméstica; no siente la mano y tiene quemaduras.,descarga_moderada,descarga_moderada,75,medium,medium,no,no,si,si,si,si
+VS01,insolacion,"Media hora en el parque; mareo leve, piel roja y sudorosa, tomó agua.",insolacion_leve,insolacion_leve,100,low,low,no,no,si,si,si,si
+VS02,insolacion,"Albañil tras toda la mañana al sol; vómito, piel fría y húmeda, sin agua.",insolacion_moderada,insolacion_moderada,100,medium,medium,no,no,si,si,si,si
+VS03,insolacion,"Corredor de maratón; habla incoherente, piel caliente y seca.",insolacion_grave,insolacion_grave,100,high,high,si,si,si,si,si,si
+VS04,insolacion,"Dos horas en un concierto al aire libre; dolor de cabeza fuerte, no bebió agua.",insolacion_moderada,insolacion_moderada,40,medium,medium,no,no,si,si,si,si
+VS05,insolacion,Niño olvidado en un auto; inconsciente y muy caliente.,insolacion_grave,insolacion_grave,25,high,high,si,si,si,si,si,si
+VS06,insolacion,"Jardinero 2 horas; calambres, bien hidratado, piel roja.",insolacion_leve,insolacion_leve,60,low,low,no,no,si,si,si,si
+VS07,insolacion,Señora mayor tras 4 horas de calor en casa; somnolienta y desorientada.,insolacion_grave,insolacion_grave,50,high,high,si,si,si,si,si,si
+VS08,insolacion,"Desfile de 40 minutos al sol; mareo, sin cambios en piel, hidratado.",insolacion_leve,insolacion_leve,80,low,low,no,no,si,si,si,si
+VS09,insolacion,"Cuatro horas pescando; náuseas, piel roja, sí tomó agua.",insolacion_moderada,insolacion_moderada,60,medium,medium,no,no,si,si,si,si
+VS10,insolacion,"Trabajó 2 horas en techo; mareo, piel húmeda y fría, no ha tomado agua.",insolacion_moderada,insolacion_moderada,60,medium,medium,no,no,si,si,si,si
+VC01,convulsion,"Joven con epilepsia; crisis de 40 segundos, ya está bien.",convulsion_leve,convulsion_leve,100,low,low,no,no,si,si,si,si
+VC02,convulsion,Sigue convulsionando desde hace 6 minutos.,convulsion_grave,convulsion_grave,66,high,high,si,si,si,si,si,si
+VC03,convulsion,Bebé con fiebre convulsionó 1 minuto; ya le había pasado; ahora duerme.,convulsion_moderada,convulsion_moderada,100,medium,medium,no,no,si,si,si,si
+VC04,convulsion,Compañero de trabajo convulsiona por primera vez; ya terminó.,convulsion_grave,convulsion_grave,0,high,high,si,si,si,si,si,si
+VC05,convulsion,Convulsionó después de consumir drogas.,convulsion_grave,convulsion_grave,0,high,high,si,si,si,si,si,si
+VC06,convulsion,"Epiléptico conocido; crisis de 4 minutos, somnoliento.",convulsion_moderada,convulsion_leve,60,medium,medium,no,no,no,si,si,no
+VC07,convulsion,Embarazada de 8 meses convulsiona.,convulsion_grave,convulsion_grave,33,high,high,si,si,si,si,si,si
+VC08,convulsion,Epiléptico; tras la crisis no despierta.,convulsion_grave,convulsion_grave,0,high,high,si,si,si,si,si,si
+VC09,convulsion,"Epiléptico con crisis de 1 minuto; somnoliento después, como de costumbre.",convulsion_leve,convulsion_moderada,75,low,medium,no,no,no,no,si,no
+VC10,convulsion,Niño con fiebre convulsionando en este momento; ya le había pasado.,convulsion_moderada,convulsion_moderada,50,medium,medium,no,no,si,si,si,si

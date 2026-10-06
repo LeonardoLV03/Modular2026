@@ -401,6 +401,9 @@ opcion_asfixia(5, 'No estoy seguro', []).
 sintoma_emergencia_asfixia(sin_respiracion).
 sintoma_emergencia_asfixia(inconsciente).
 sintoma_emergencia_asfixia(cianosis).
+% REVISAR POR PERSONAL DE SALUD: obstrucción total (no puede hablar ni toser
+% con eficacia) = llamar al 911 mientras se aplica Heimlich.
+sintoma_emergencia_asfixia(obstruccion_total).
 
 % --- Gravedad de cada caso (igual que la antigua severidad_asfixia) ---
 gravedad_caso_asfixia(asfixia_leve, low).
@@ -408,9 +411,8 @@ gravedad_caso_asfixia(asfixia_moderada, medium).
 gravedad_caso_asfixia(asfixia_grave, high).
 
 % --- Disparadores de severidad media (piso de seguridad) ---
-% REVISAR POR PERSONAL DE SALUD: la obstrucción total (no puede hablar ni
-% toser con eficacia) se trata al menos como severidad media.
-sintoma_moderado_asfixia(obstruccion_total).
+% (obstruccion_total ahora es síntoma de emergencia; no hay otros)
+sintoma_moderado_asfixia(_) :- fail.
 
 % --- Predicados públicos del módulo (delegan en el motor común) ---
 respuestas_asfixia_a_sintomas(Respuestas, Sintomas) :-
@@ -1429,6 +1431,24 @@ pm_hay_emergencia(Modulo, Sintomas) :-
     member(S, Sintomas),
     pm_llamar(sintoma_emergencia_, Modulo, [S]),
     !.
+% REVISAR POR PERSONAL DE SALUD: también es emergencia cuando las respuestas
+% coinciden al menos 75 % con un caso de gravedad alta (p. ej. sospecha de
+% hemorragia interna sin ningún síntoma de emergencia individual).
+pm_hay_emergencia(Modulo, Sintomas) :-
+    pm_llamar(gravedad_caso_, Modulo, [Caso, high]),
+    pm_pct_caso(Modulo, Caso, Sintomas, Pct),
+    Pct >= 75,
+    !.
+
+% Módulos cuyos casos son NIVELES (leve / moderada / grave). En ellos, como en
+% las reglas originales nivel_X(grave), cualquier emergencia es caso grave.
+modulo_por_niveles(desmayo).
+modulo_por_niveles(fractura).
+modulo_por_niveles(intoxicacion).
+modulo_por_niveles(picadura).
+modulo_por_niveles(descarga).
+modulo_por_niveles(insolacion).
+modulo_por_niveles(convulsion).
 
 pm_hay_moderado(Modulo, Sintomas) :-
     member(S, Sintomas),
@@ -1473,6 +1493,10 @@ pm_recomendaciones(Modulo, Caso, Severidad, Recomendaciones) :-
     ),
     ( RC >= RS, ( Severidad \== high ; pm_menciona_911(RecsCaso) ) ->
         Recomendaciones = RecsCaso
+    ; Severidad == high, RC >= 1, pm_menciona_911(RecsCaso) ->
+        % Caso intermedio que ya indica llamar al 911 (p. ej. asfixia moderada:
+        % Heimlich + 911): no se anteponen instrucciones de otro caso (RCP).
+        Recomendaciones = RecsCaso
     ; Severidad == low ->
         recomendaciones_genericas(Recomendaciones)
     ;
@@ -1489,23 +1513,39 @@ pm_menciona_911(Recs) :-
 
 pm_diagnostico(Modulo, Respuestas, EsEmergencia, Severidad, Recomendaciones, Caso, Pct, Accion, Resultados, ExactOnly) :-
     pm_respuestas_a_sintomas(Modulo, Respuestas, Sintomas),
-    pm_resultados(Modulo, Sintomas, 50, Resultados, ExactOnly),
-    ( Resultados = [Primero | _] ->
-        get_dict(caseType, Primero, Caso),
-        get_dict(confidence, Primero, Pct),
-        get_dict(action, Primero, Accion)
+    pm_resultados(Modulo, Sintomas, 50, Resultados0, ExactOnly0),
+    ( Resultados0 = [Primero | _] ->
+        get_dict(caseType, Primero, Caso0),
+        get_dict(confidence, Primero, Pct0),
+        get_dict(action, Primero, Accion0)
     ; pm_ranking(Modulo, Sintomas, [MejorPct-MejorCaso | _]), MejorPct > 0 ->
         % Fallback seguro: ningún caso llega al 50 %, se usa el de mayor
         % porcentaje (results queda vacío; la UI muestra caseType y %).
-        Caso = MejorCaso, Pct = MejorPct,
-        pm_llamar(accion_, Modulo, [Caso, Accion])
+        Caso0 = MejorCaso, Pct0 = MejorPct,
+        pm_llamar(accion_, Modulo, [Caso0, Accion0])
     ;
-        Caso = desconocido, Pct = 0
+        Caso0 = desconocido, Pct0 = 0
     ),
     ( pm_hay_emergencia(Modulo, Sintomas) -> EsEmergencia = true ; EsEmergencia = false ),
+    % Coherencia tipo/alerta: en los módulos por niveles, si hay emergencia y
+    % el caso ganador no es grave, se reporta el caso grave del módulo con su
+    % porcentaje real y nivel 'ALERTA 911' (lo decidió una señal de alarma,
+    % no la coincidencia de patrón).
+    ( EsEmergencia == true,
+      modulo_por_niveles(Modulo),
+      \+ pm_rango_caso(Modulo, Caso0, 2) ->
+        once(pm_llamar(gravedad_caso_, Modulo, [Caso, high])),
+        pm_pct_caso(Modulo, Caso, Sintomas, Pct),
+        pm_llamar(accion_, Modulo, [Caso, Accion]),
+        Resultados = [res{caseType:Caso, confidence:Pct, action:Accion, level:'ALERTA 911'}],
+        ExactOnly = false
+    ;
+        Caso = Caso0, Pct = Pct0, Resultados = Resultados0, ExactOnly = ExactOnly0,
+        ( var(Accion0) -> true ; Accion = Accion0 )
+    ),
     % Un caso por debajo del umbral (fallback) no es evidencia suficiente
     % para subir la severidad: en ese caso decide solo el piso de seguridad.
-    ( Pct >= 50 ->
+    ( ( Pct >= 50 ; EsEmergencia == true ) ->
         pm_severidad_caso(Modulo, EsEmergencia, Caso, SevCaso)
     ;
         SevCaso = low
