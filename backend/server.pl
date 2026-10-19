@@ -111,11 +111,11 @@ gravedad_caso_hemorragia(sin_signos_de_hemorragia, low).
 accion_hemorragia(hemorragia_leve,
     'Limpiar la herida, Mantener limpia la herida, Aplicar presión directa, Cubrir con gasa estéril').
 accion_hemorragia(hemorragia_media,
-    'Colocar vendaje firme, Elevar la zona afectada, presión directa continua.').
+    'Colocar vendaje firme, Elevar la zona afectada, Presión directa continua').
 accion_hemorragia(hemorragia_grave,
     'Llamar al 911 de inmediato, Si un objeto está incrustado NO retirarlo, Presión fuerte y constante, Vendar o reforzar el vendaje, Mantener la persona acostada, Monitorear la respiración y el pulso').
 accion_hemorragia(hemorragia_interna,
-    'Llamar al 911, Mantener la persona acostada, Mantener la calma, NO darle alimentos ni bebidas, NO medicar, Elevar piernas (Si no hay lesiones)').
+    'Llamar al 911, Mantener la persona acostada, Mantener la calma, NO darle alimentos ni bebidas, NO medicar, Elevar piernas (si no hay lesiones)').
 % REVISAR POR PERSONAL DE SALUD: texto nuevo.
 accion_hemorragia(sin_signos_de_hemorragia,
     'No se observan signos de hemorragia: vigila a la persona y, si aparece sangrado, mareo, palidez o desmayo, llama al 911').
@@ -132,7 +132,7 @@ recomendaciones_hemorragia(hemorragia_leve, [
 recomendaciones_hemorragia(hemorragia_media, [
     'Colocar vendaje firme',
     'Elevar la zona afectada',
-    'presión directa continua.'
+    'Presión directa continua'
 ]).
 recomendaciones_hemorragia(hemorragia_grave, [
     'Llamar al 911 de inmediato',
@@ -148,7 +148,7 @@ recomendaciones_hemorragia(hemorragia_interna, [
     'Mantener la calma',
     'NO darle alimentos ni bebidas',
     'NO medicar',
-    'Elevar piernas (Si no hay lesiones)'
+    'Elevar piernas (si no hay lesiones)'
 ]).
 % REVISAR POR PERSONAL DE SALUD: texto nuevo.
 recomendaciones_hemorragia(sin_signos_de_hemorragia, [
@@ -257,7 +257,7 @@ accion_desmayo(desmayo_grave,
 
 % --- Recomendaciones (texto original de diagnostico/5, sin cambios) ---
 recomendaciones_desmayo(desmayo_leve, [
-    'Manten la calma y tranquiliza a la persona',
+    'Mantén la calma y tranquiliza a la persona',
     'Siéntala con la cabeza inclinada entre las rodillas O recuéstala con piernas elevadas',
     'Afloja toda ropa ajustada (cinturón, corbata, cuello de camisa)',
     'Ventila el área: abre ventanas o lleva a un lugar fresco',
@@ -361,7 +361,7 @@ accion_asfixia(asfixia_grave,
 
 recomendaciones_asfixia(asfixia_leve, [
     'Anima a toser fuerte y vigila la respiración', 'Inclina a la persona ligeramente hacia adelante',
-    'No des liquidos ni alimentos', 'Si la tos se vuelve ineficaz o empeora, llama al 911'
+    'No des líquidos ni alimentos', 'Si la tos se vuelve ineficaz o empeora, llama al 911'
 ]).
 recomendaciones_asfixia(asfixia_moderada, [
     'Pregunta si se está asfixiando y confirma que no puede hablar','Aplica maniobra de Heimlich con compresiones hacia adentro y arriba',

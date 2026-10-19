@@ -435,7 +435,7 @@ const lessons = [
           "No usarlo, esperar ayuda"
         ],
         "correctIndex": 2,
-        "explanation": "El autoinyector puede ser vital en minutos — se debe usar de inmediato y after llamar a emergencias."
+        "explanation": "El autoinyector puede ser vital en minutos — se debe usar de inmediato y después llamar a emergencias."
       },
       {
         "question": "¿Es seguro rascar una picadura que da mucha comezón?",

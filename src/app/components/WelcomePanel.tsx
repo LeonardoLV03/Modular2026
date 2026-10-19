@@ -14,11 +14,11 @@ const hints: { name: string; module: Module; icon: any; color: string; bg: strin
   { name: 'Asfixia', module: 'asfixia', icon: Wind, color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
   { name: 'Quemadura', module: 'quemadura', icon: Flame, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
   { name: 'Fractura', module: 'fractura', icon: Bone, color: '#0ea5e9', bg: 'rgba(14,165,233,0.13)'},
-  { name: 'Intoxicacion', module: 'intoxicacion', icon: FlaskConical, color: '#10b981', bg: 'rgba(16,185,129,0.13)'},
+  { name: 'Intoxicación', module: 'intoxicacion', icon: FlaskConical, color: '#10b981', bg: 'rgba(16,185,129,0.13)'},
   { name: 'Picadura', module: 'picadura', icon: Bug, color: '#3b0764', bg: 'rgba(59, 7, 100, 0.13)'},
   { name: 'Desc. Eléctrica', module: 'descarga', icon: Zap, color: '#eab308', bg: 'rgba(234,179,8,0.13)'},
-  { name: 'Insolacion', module: 'insolacion', icon: Sun, color: '#ef4444', bg: 'rgba(239,68,68,0.13)'},
-  { name: 'Convulsion', module: 'convulsion', icon: Brain, color: '#6366f1', bg: 'rgba(99,102,241,0.13)'},
+  { name: 'Insolación', module: 'insolacion', icon: Sun, color: '#ef4444', bg: 'rgba(239,68,68,0.13)'},
+  { name: 'Convulsión', module: 'convulsion', icon: Brain, color: '#6366f1', bg: 'rgba(99,102,241,0.13)'},
 ];
 
 export function WelcomePanel({ onSelect, onOpenMenu }: WelcomePanelProps) {
