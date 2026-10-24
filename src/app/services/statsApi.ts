@@ -1,3 +1,5 @@
+import type { ConsultationType } from './consultationType';
+
 const STATS_URL = import.meta.env.VITE_STATS_URL ?? 'http://localhost:3001';
 const QUEUE_KEY = 'modular_stats_queue';
 const TOKEN_KEY = 'modular_admin_token';
@@ -42,15 +44,26 @@ export interface ConsultationRecord {
   answers: string[];
   recommendations: string[];
   sessionId: string;
+  // Opcional solo para registros viejos que quedaron en la cola local antes del switch
+  consultationType?: ConsultationType;
 }
 
-export interface StatsData {
+// Tipos que puede tener una consulta guardada. 'unclassified' = anteriores al switch.
+export type StoredConsultationType = ConsultationType | 'unclassified';
+
+// Estadísticas de un conjunto de consultas
+export interface StatsBlock {
   total: number;
   byModule: Record<string, number>;
   bySeverity: Record<string, number>;
   emergencies: number;
   byDate: Record<string, number>;
   recentConsultations: any[];
+}
+
+// La raíz trae las estadísticas de TODAS las consultas; `byType` las trae separadas.
+export interface StatsData extends StatsBlock {
+  byType?: Record<StoredConsultationType, StatsBlock>;
 }
 
 // ── Cola local para reintentos ────────────────────────────────

@@ -26,7 +26,34 @@ interface Notification {
   module: string;
   severity: string;
   isEmergency: boolean;
+  consultationType?: string;
 }
+
+type TypeFilter = StatsAPI.StoredConsultationType | 'all';
+
+const TYPE_LABELS: Record<StatsAPI.StoredConsultationType, string> = {
+  real:         'Real',
+  training:     'Entrenamiento',
+  unclassified: 'Sin clasificar',
+};
+
+const TYPE_BADGE_CLASSES: Record<StatsAPI.StoredConsultationType, string> = {
+  real:         'bg-red-100 text-red-700',
+  training:     'bg-indigo-100 text-indigo-700',
+  unclassified: 'bg-gray-100 text-gray-500',
+};
+
+// Cualquier valor ausente o desconocido se muestra como "Sin clasificar"
+function normalizeType(value: unknown): StatsAPI.StoredConsultationType {
+  return value === 'real' || value === 'training' ? value : 'unclassified';
+}
+
+const FILTER_DESCRIPTIONS: Record<TypeFilter, string> = {
+  real:         'Solo emergencias que estaban ocurriendo de verdad. Es la base para estadísticas y predicciones.',
+  training:     'Consultas hechas como práctica o entrenamiento.',
+  unclassified: 'Consultas guardadas antes de que existiera el switch; no se sabe si eran reales o de práctica.',
+  all:          'Todas las consultas juntas (reales, entrenamiento y sin clasificar).',
+};
 
 interface StatsContentProps {
   onUnauthorized: () => void;
@@ -40,6 +67,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
   const [error, setError]               = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [recentView, setRecentView]     = useState<'table' | 'charts'>('table');
+  const [typeFilter, setTypeFilter]     = useState<TypeFilter>('real');
   const socketRef = useRef<Socket | null>(null);
   const notifId   = useRef(0);
 
@@ -90,6 +118,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
         module:      data.module,
         severity:    data.severity,
         isEmergency: data.isEmergency,
+        consultationType: data.consultationType,
       }]);
 
       // Eliminar notificación después de 4 segundos
@@ -117,7 +146,24 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
     </div>
   );
 
-  const maxModule = Math.max(...Object.values(stats.byModule), 1);
+  // Estadísticas que se muestran según el filtro. Si el servidor aún no envía
+  // `byType` (versión anterior), se muestran todas las consultas.
+  const view: StatsAPI.StatsBlock =
+    typeFilter === 'all' || !stats.byType ? stats : stats.byType[typeFilter];
+
+  const typeCount = (t: StatsAPI.StoredConsultationType) => stats.byType?.[t]?.total ?? 0;
+
+  const filterTabs: { id: TypeFilter; label: string; count: number }[] = [
+    { id: 'real',         label: 'Reales',        count: typeCount('real') },
+    { id: 'training',     label: 'Entrenamiento', count: typeCount('training') },
+    // "Sin clasificar" solo aparece si hay consultas anteriores al switch
+    ...(typeCount('unclassified') > 0 || typeFilter === 'unclassified'
+      ? [{ id: 'unclassified' as const, label: 'Sin clasificar', count: typeCount('unclassified') }]
+      : []),
+    { id: 'all',          label: 'Todas',         count: stats.total },
+  ];
+
+  const maxModule = Math.max(...Object.values(view.byModule), 1);
 
   // Sin `relative`: las notificaciones se posicionan respecto al AdminPanel
   return (
@@ -141,6 +187,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                 <p className="text-xs text-gray-500">
                   {MODULE_LABELS[n.module] ?? n.module} —{' '}
                   {n.severity === 'high' ? 'Severa' : n.severity === 'medium' ? 'Moderada' : 'Leve'}
+                  {' · '}{TYPE_LABELS[normalizeType(n.consultationType)]}
                 </p>
               </div>
             </motion.div>
@@ -151,13 +198,41 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
+        {/* Filtro por tipo de consulta */}
+        <div className="space-y-2">
+          <div className="inline-flex flex-wrap gap-1 bg-gray-100 rounded-2xl p-1">
+            {filterTabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setTypeFilter(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                  typeFilter === tab.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
+                }`}
+              >
+                {tab.label}
+                <span className={`rounded-full px-1.5 text-[10px] ${
+                  typeFilter === tab.id ? 'bg-gray-100 text-gray-600' : 'bg-gray-200/70 text-gray-500'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400">{FILTER_DESCRIPTIONS[typeFilter]}</p>
+          {view.total === 0 && (
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2">
+              Todavía no hay consultas en esta vista.
+            </p>
+          )}
+        </div>
+
         {/* Tarjetas resumen */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: 'Total Consultas', value: stats.total,                          color: 'text-gray-900'    },
-            { label: 'Emergencias',     value: stats.emergencies,                    color: 'text-red-600'     },
-            { label: 'Severidad Alta',  value: stats.bySeverity.high   || 0,         color: 'text-orange-500'  },
-            { label: 'Casos Leves',     value: stats.bySeverity.low    || 0,         color: 'text-emerald-500' },
+            { label: 'Total Consultas', value: view.total,                          color: 'text-gray-900'    },
+            { label: 'Emergencias',     value: view.emergencies,                    color: 'text-red-600'     },
+            { label: 'Severidad Alta',  value: view.bySeverity.high   || 0,         color: 'text-orange-500'  },
+            { label: 'Casos Leves',     value: view.bySeverity.low    || 0,         color: 'text-emerald-500' },
           ].map((card, i) => (
             <motion.div
               key={card.label}
@@ -186,7 +261,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
             Consultas por Módulo
           </h3>
           <div className="space-y-3">
-            {Object.entries(stats.byModule)
+            {Object.entries(view.byModule)
               .sort((a, b) => b[1] - a[1])
               .map(([module, count]) => (
                 <div key={module} className="flex items-center gap-3">
@@ -222,8 +297,8 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                 { key: 'medium', label: 'Moderada', color: '#f59e0b' },
                 { key: 'low',    label: 'Leve',     color: '#10b981' },
               ].map(({ key, label, color }) => {
-                const count = stats.bySeverity[key] || 0;
-                const pct = stats.total ? (count / stats.total) * 100 : 0;
+                const count = view.bySeverity[key] || 0;
+                const pct = view.total ? (count / view.total) * 100 : 0;
                 return (
                   <div key={key} className="flex items-center gap-3">
                     <span className="w-20 text-sm text-gray-600">{label}</span>
@@ -251,24 +326,24 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
             <div className="flex items-center justify-center gap-10 py-3">
               <div className="text-center">
                 <motion.p
-                  key={stats.emergencies}
+                  key={view.emergencies}
                   initial={{ scale: 1.2 }}
                   animate={{ scale: 1 }}
                   className="text-4xl font-bold text-red-500"
                 >
-                  {stats.emergencies}
+                  {view.emergencies}
                 </motion.p>
                 <p className="text-xs text-gray-400 mt-1">Emergencias</p>
               </div>
               <div className="h-12 w-px bg-gray-200" />
               <div className="text-center">
                 <motion.p
-                  key={stats.total - stats.emergencies}
+                  key={view.total - view.emergencies}
                   initial={{ scale: 1.2 }}
                   animate={{ scale: 1 }}
                   className="text-4xl font-bold text-emerald-500"
                 >
-                  {stats.total - stats.emergencies}
+                  {view.total - view.emergencies}
                 </motion.p>
                 <p className="text-xs text-gray-400 mt-1">No emergencias</p>
               </div>
@@ -280,7 +355,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Consultas Recientes ({stats.recentConsultations.length})
+              Consultas Recientes ({view.recentConsultations.length})
             </h3>
             <div className="flex gap-1 bg-gray-100 rounded-full p-1">
               <button
@@ -311,12 +386,13 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                     <th className="pb-2 pr-4">Módulo</th>
                     <th className="pb-2 pr-4">Severidad</th>
                     <th className="pb-2 pr-4">Emergencia</th>
+                    <th className="pb-2 pr-4">Tipo de consulta</th>
                     <th className="pb-2">Fecha</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   <AnimatePresence>
-                    {stats.recentConsultations.map((c, i) => (
+                    {view.recentConsultations.map((c, i) => (
                       <motion.tr
                         key={c._id ?? i}
                         initial={{ opacity: 0, backgroundColor: '#eef2ff' }}
@@ -336,6 +412,11 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                           </span>
                         </td>
                         <td className="py-2 pr-4">{c.isEmergency ? '🔴 Sí' : '🟢 No'}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_BADGE_CLASSES[normalizeType(c.consultationType)]}`}>
+                            {TYPE_LABELS[normalizeType(c.consultationType)]}
+                          </span>
+                        </td>
                         <td className="py-2 text-gray-400 text-xs">
                           {new Date(c.timestamp).toLocaleDateString('es-MX')}
                         </td>
@@ -346,7 +427,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
               </table>
             </div>
           ) : (
-            <StatsCharts stats={stats} />
+            <StatsCharts stats={view} />
           )}
         </div>
       </div>

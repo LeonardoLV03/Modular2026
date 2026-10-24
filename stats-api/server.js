@@ -347,6 +347,18 @@ const VALID_MODULES = [
 
 const VALID_SEVERITIES = ['high', 'medium', 'low'];
 
+// Tipo de consulta: lo que el usuario declara con el switch del chat.
+// 'unclassified' NO es válido al guardar: solo se asigna a consultas
+// anteriores al switch (o enviadas por clientes viejos sin el campo).
+const VALID_CONSULTATION_TYPES = ['training', 'real'];
+const UNCLASSIFIED = 'unclassified';
+
+function getConsultationType(c) {
+  return VALID_CONSULTATION_TYPES.includes(c && c.consultationType)
+    ? c.consultationType
+    : UNCLASSIFIED;
+}
+
 function validateConsultation(data) {
   const errors = [];
   if (!data.module || !VALID_MODULES.includes(data.module))
@@ -359,6 +371,9 @@ function validateConsultation(data) {
     errors.push('Respuestas inválidas (máx 10)');
   if (!Array.isArray(data.recommendations) || data.recommendations.length > 20)
     errors.push('Recomendaciones inválidas (máx 20)');
+  // Opcional por compatibilidad con clientes viejos; si viene, debe ser válido
+  if (data.consultationType !== undefined && !VALID_CONSULTATION_TYPES.includes(data.consultationType))
+    errors.push('Tipo de consulta inválido');
   return errors;
 }
 
@@ -389,8 +404,8 @@ function updateStreak(user) {
 }
 
 // ── Helpers de estadísticas ──────────────────────────────────
-async function buildStats(collection) {
-  const consultations = await collection.find({}).toArray();
+// Calcula las estadísticas de una lista de consultas
+function buildStatsBlock(consultations) {
   const total = consultations.length;
 
   const byModule = {};
@@ -412,11 +427,28 @@ async function buildStats(collection) {
   });
 
   const RECENT_LIMIT = 36;
-  const recentConsultations = consultations
+  const recentConsultations = [...consultations]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice(0, RECENT_LIMIT);
 
   return { total, byModule, bySeverity, emergencies, byDate, recentConsultations };
+}
+
+// Devuelve las estadísticas de TODAS las consultas en la raíz (compatible con
+// el formato anterior) y el mismo cálculo separado por tipo en `byType`.
+async function buildStats(collection) {
+  const raw = await collection.find({}).toArray();
+
+  // Normaliza el tipo: las consultas sin el campo quedan como 'unclassified'
+  const consultations = raw.map(c => ({ ...c, consultationType: getConsultationType(c) }));
+
+  const byType = {
+    real:         buildStatsBlock(consultations.filter(c => c.consultationType === 'real')),
+    training:     buildStatsBlock(consultations.filter(c => c.consultationType === 'training')),
+    unclassified: buildStatsBlock(consultations.filter(c => c.consultationType === UNCLASSIFIED)),
+  };
+
+  return { ...buildStatsBlock(consultations), byType };
 }
 
 let db;
@@ -1017,7 +1049,7 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Datos inválidos', details: errors });
     }
 
-    const { module, severity, isEmergency, answers, recommendations, sessionId } = req.body;
+    const { module, severity, isEmergency, answers, recommendations, sessionId, consultationType } = req.body;
 
     const record = {
       module,
@@ -1026,6 +1058,8 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
       answers:         answers.map(a => String(a).slice(0, 200)),
       recommendations: recommendations.map(r => String(r).slice(0, 500)),
       sessionId:       sessionId ? String(sessionId).slice(0, 100) : null,
+      // 'training' | 'real'. Sin el campo (cliente viejo) → 'unclassified'; nunca se adivina.
+      consultationType: getConsultationType({ consultationType }),
       timestamp:       new Date(),
     };
 
@@ -1040,6 +1074,7 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
       module: record.module,
       severity: record.severity,
       isEmergency: record.isEmergency,
+      consultationType: record.consultationType,
       timestamp: record.timestamp,
     });
 
@@ -1068,7 +1103,7 @@ app.get('/api/consultations', verifyAdmin, async (req, res) => {
       .find({})
       .sort({ timestamp: -1 })
       .toArray();
-    res.json(consultations);
+    res.json(consultations.map(c => ({ ...c, consultationType: getConsultationType(c) })));
   } catch (error) {
     console.error('Error obteniendo consultas:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });

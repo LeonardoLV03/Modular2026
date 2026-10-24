@@ -5,8 +5,17 @@ import { Module } from '../App';
 import { ChatMessage } from './ChatMessage';
 import { DiagnosisCard } from './DiagnosisCard';
 import { EmergencyAlert } from './EmergencyAlert';
+import { ConsultationTypeSwitch } from './ConsultationTypeSwitch';
+import { ConsultationTypeNotice } from './ConsultationTypeNotice';
 import * as PrologAPI from '../services/prologApi';
 import * as StatsAPI from '../services/statsApi';
+import {
+  useConsultationType,
+  setConsultationType,
+  getConsultationType,
+  CONSULTATION_TYPE_LABELS,
+  type ConsultationType,
+} from '../services/consultationType';
 
 import iconDesmayo from '../assets/emergencias/desmayo.png';
 import iconHemorragia from '../assets/emergencias/hemorragia.png';
@@ -163,6 +172,9 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
   const [isEmergency, setIsEmergency]         = useState(false);
   const [showDiagnosis, setShowDiagnosis]     = useState(false);
   const [diagnosisData, setDiagnosisData]     = useState<PrologAPI.DiagnosisResponse | null>(null);
+  // Tipo con el que quedó guardada la consulta actual (null = aún no se guarda)
+  const [savedType, setSavedType]             = useState<ConsultationType | null>(null);
+  const consultationType = useConsultationType();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sessionIdRef    = useRef<string | null>(null); // guarda el sessionId más reciente, fuera del closure del effect
 
@@ -194,6 +206,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
       setIsEmergency(false);
       setShowDiagnosis(false);
       setDiagnosisData(null);
+      setSavedType(null);
       setIsLoading(true);
       addMessage(false, `Iniciando consulta para: ${label}...`, false);
 
@@ -248,6 +261,11 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
       setShowDiagnosis(true);
       setIsEmergency(diagnosis.isEmergency);
 
+      // El tipo se lee AQUÍ (valor más reciente del switch), así la consulta se guarda
+      // con lo que el usuario tenía seleccionado al terminar y las ya guardadas no cambian.
+      const typeAtSave = getConsultationType();
+      setSavedType(typeAtSave);
+
       // Guardar en MongoDB (no bloquea la UI si falla)
       StatsAPI.saveConsultation({
         module: module!,
@@ -256,6 +274,7 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         answers: answersList,
         recommendations: diagnosis.recommendations || [],
         sessionId: sessionId!,
+        consultationType: typeAtSave,
       }).catch(() => {});
     } catch {
       addMessage(false, 'Error al obtener el diagnóstico. Intenta de nuevo.', false);
@@ -314,26 +333,44 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
     return QUICK_REPLIES;
   };
 
+  const switchNote = savedType
+    ? `Esta consulta se guardó como ${CONSULTATION_TYPE_LABELS[savedType]}. El cambio aplica a la siguiente.`
+    : consultationType === 'real'
+      ? 'Se guardará como emergencia real'
+      : 'Se guardará como práctica';
+
   return (
     <div className="flex flex-1 max-h-[100dvh] w-full flex-col overflow-hidden bg-white">
+      {/* Aviso informativo del switch: una vez por sesión */}
+      <ConsultationTypeNotice />
+
       {/* Header */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className={`bg-gradient-to-r ${currentColor.gradient} p-5 shadow-xl`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={onReset}
             className="p-2 hover:bg-white/20 rounded-full transition-colors text-white"
           >
             <ArrowLeft size={24} />
           </button>
-          <div className="flex-1">
+          <div className="order-1 min-w-0 flex-1 lg:order-none">
             <h2 className="text-xl text-white">{label}</h2>
             <p className="text-sm text-white/90">Asistente de primeros auxilios</p>
           </div>
-          <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-md flex-shrink-0">
+          {/* Switch Entrenamiento / Real: en pantallas chicas va en su propia fila;
+              en pantallas grandes, a la derecha junto al avatar */}
+          <div className="order-3 basis-full lg:order-none lg:basis-auto">
+            <ConsultationTypeSwitch
+              value={consultationType}
+              onChange={setConsultationType}
+              note={switchNote}
+            />
+          </div>
+          <div className="order-2 w-12 h-12 rounded-2xl overflow-hidden shadow-md flex-shrink-0 lg:order-none">
             <img src={currentIcon} alt={label} className="w-full h-full object-cover" />
           </div>
         </div>
