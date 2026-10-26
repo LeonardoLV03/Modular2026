@@ -49,16 +49,20 @@ export function AdminPanel({ onUnauthorized, onBack }: AdminPanelProps) {
 
       {/* Pestañas */}
       <div className="flex-shrink-0 px-6 pt-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex gap-1 bg-gray-100 rounded-full p-1">
+        {/* En pantallas chicas solo la pestaña activa muestra su nombre; las demás, solo el ícono */}
+        <div className="inline-flex max-w-full gap-1 overflow-x-auto bg-gray-100 rounded-full p-1">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              aria-label={tab.label}
+              title={tab.label}
+              className={`flex flex-shrink-0 items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 activeTab === tab.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'
               }`}
             >
-              <tab.icon size={14} /> {tab.label}
+              <tab.icon size={14} />
+              <span className={activeTab === tab.id ? '' : 'hidden sm:inline'}>{tab.label}</span>
             </button>
           ))}
         </div>

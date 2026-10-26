@@ -93,6 +93,9 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
+      // El servidor solo acepta el socket del administrador: se envía su token.
+      // Se pasa como función para leer el token vigente en cada (re)conexión.
+      auth: (cb) => cb({ token: StatsAPI.getToken() ?? '' }),
     });
 
     socketRef.current = socket;
@@ -102,6 +105,11 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
     });
 
     socket.on('disconnect', () => {
+      onConnectionChange?.(false);
+    });
+
+    // Si el servidor rechaza la conexión (por ejemplo, token vencido) el indicador queda en "Desconectado"
+    socket.on('connect_error', () => {
       onConnectionChange?.(false);
     });
 
