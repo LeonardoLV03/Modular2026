@@ -1,4 +1,5 @@
 import type { ConsultationType } from './consultationType';
+import { getClientId } from './clientId';
 
 const STATS_URL = import.meta.env.VITE_STATS_URL ?? 'http://localhost:3001';
 const QUEUE_KEY = 'modular_stats_queue';
@@ -62,9 +63,23 @@ export interface StatsBlock {
 }
 
 // La raíz trae las estadísticas de TODAS las consultas; `byType` las trae separadas.
+// 'excluded' = consultas apartadas de las estadísticas por una penalización
+export type StatsViewKey = StoredConsultationType | 'excluded';
+
 export interface StatsData extends StatsBlock {
-  byType?: Record<StoredConsultationType, StatsBlock>;
+  byType?: Record<StatsViewKey, StatsBlock>;
 }
+
+// Resultado de intentar guardar una consulta
+export type SaveResult =
+  | { status: 'saved' | 'queued' | 'rate_limited' }
+  | { status: 'penalized'; until: string | null };
+
+type SendOutcome =
+  | { kind: 'ok' }
+  | { kind: 'penalized'; until: string | null }
+  | { kind: 'rate_limited' }
+  | { kind: 'failed' };
 
 // ── Cola local para reintentos ────────────────────────────────
 function getQueue(): ConsultationRecord[] {
@@ -89,17 +104,29 @@ function clearQueue(): void {
   try { localStorage.removeItem(QUEUE_KEY); } catch {}
 }
 
-async function trySendRecord(record: ConsultationRecord): Promise<boolean> {
+async function trySendRecord(record: ConsultationRecord): Promise<SendOutcome> {
   try {
     const res = await fetch(`${STATS_URL}/api/consultations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record),
+      // El ID de sesión se agrega aquí para que también lo lleven los registros de la cola
+      body: JSON.stringify({ ...record, clientId: getClientId() }),
       signal: AbortSignal.timeout(5000),
     });
-    return res.ok;
+    if (res.ok) return { kind: 'ok' };
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      if (data && data.error === 'penalized') {
+        return { kind: 'penalized', until: data.until ?? null };
+      }
+    }
+    if (res.status === 429) {
+      const data = await res.json().catch(() => ({}));
+      if (data && data.error === 'rate_limited') return { kind: 'rate_limited' };
+    }
+    return { kind: 'failed' };
   } catch {
-    return false;
+    return { kind: 'failed' };
   }
 }
 
@@ -109,9 +136,20 @@ export async function flushQueue(): Promise<void> {
   if (queue.length === 0) return;
 
   const failed: ConsultationRecord[] = [];
-  for (const record of queue) {
-    const success = await trySendRecord(record);
-    if (!success) failed.push(record);
+  for (let i = 0; i < queue.length; i++) {
+    const outcome = await trySendRecord(queue[i]);
+    if (outcome.kind === 'ok') continue;
+    // Sesión penalizada: el servidor los rechazaría todos, se descartan
+    if (outcome.kind === 'penalized') {
+      clearQueue();
+      return;
+    }
+    failed.push(queue[i]);
+    // Límite por minuto: se conserva el resto y se reintenta más tarde
+    if (outcome.kind === 'rate_limited') {
+      failed.push(...queue.slice(i + 1));
+      break;
+    }
   }
 
   if (failed.length === 0) {
@@ -123,14 +161,31 @@ export async function flushQueue(): Promise<void> {
   }
 }
 
-export async function saveConsultation(record: ConsultationRecord): Promise<void> {
+export async function saveConsultation(record: ConsultationRecord): Promise<SaveResult> {
   // Primero intenta vaciar la cola pendiente
   await flushQueue().catch(() => {});
 
-  const success = await trySendRecord(record);
-  if (!success) {
-    // Si falla, guarda en cola local para reintentar después
-    addToQueue(record);
+  const outcome = await trySendRecord(record);
+  if (outcome.kind === 'ok') return { status: 'saved' };
+  if (outcome.kind === 'penalized') return { status: 'penalized', until: outcome.until };
+  if (outcome.kind === 'rate_limited') return { status: 'rate_limited' }; // no se reintenta
+  // Si falla la conexión, guarda en cola local para reintentar después
+  addToQueue(record);
+  return { status: 'queued' };
+}
+
+// ¿Esta sesión está penalizada? null = no se pudo saber (sin conexión)
+export async function fetchPenaltyStatus(): Promise<{ blocked: boolean; until: string | null } | null> {
+  try {
+    const res = await fetch(
+      `${STATS_URL}/api/penalties/status?clientId=${encodeURIComponent(getClientId())}`,
+      { signal: AbortSignal.timeout(4000) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return { blocked: !!data.blocked, until: data.until ?? null };
+  } catch {
+    return null;
   }
 }
 

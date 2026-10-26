@@ -27,9 +27,10 @@ interface Notification {
   severity: string;
   isEmergency: boolean;
   consultationType?: string;
+  flagged?: boolean;
 }
 
-type TypeFilter = StatsAPI.StoredConsultationType | 'all';
+type TypeFilter = StatsAPI.StatsViewKey | 'all';
 
 const TYPE_LABELS: Record<StatsAPI.StoredConsultationType, string> = {
   real:         'Real',
@@ -52,7 +53,8 @@ const FILTER_DESCRIPTIONS: Record<TypeFilter, string> = {
   real:         'Solo emergencias que estaban ocurriendo de verdad. Es la base para estadísticas y predicciones.',
   training:     'Consultas hechas como práctica o entrenamiento.',
   unclassified: 'Consultas guardadas antes de que existiera el switch; no se sabe si eran reales o de práctica.',
-  all:          'Todas las consultas juntas (reales, entrenamiento y sin clasificar).',
+  excluded:     'Consultas de sesiones penalizadas: se conservan, pero no cuentan en las estadísticas.',
+  all:          'Todas las consultas juntas, incluidas las excluidas por penalización.',
 };
 
 interface StatsContentProps {
@@ -119,6 +121,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
         severity:    data.severity,
         isEmergency: data.isEmergency,
         consultationType: data.consultationType,
+        flagged: data.flagged,
       }]);
 
       // Eliminar notificación después de 4 segundos
@@ -151,7 +154,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
   const view: StatsAPI.StatsBlock =
     typeFilter === 'all' || !stats.byType ? stats : stats.byType[typeFilter];
 
-  const typeCount = (t: StatsAPI.StoredConsultationType) => stats.byType?.[t]?.total ?? 0;
+  const typeCount = (t: StatsAPI.StatsViewKey) => stats.byType?.[t]?.total ?? 0;
 
   const filterTabs: { id: TypeFilter; label: string; count: number }[] = [
     { id: 'real',         label: 'Reales',        count: typeCount('real') },
@@ -159,6 +162,10 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
     // "Sin clasificar" solo aparece si hay consultas anteriores al switch
     ...(typeCount('unclassified') > 0 || typeFilter === 'unclassified'
       ? [{ id: 'unclassified' as const, label: 'Sin clasificar', count: typeCount('unclassified') }]
+      : []),
+    // "Excluidas" solo aparece si alguna sesión fue penalizada con exclusión de estadísticas
+    ...(typeCount('excluded') > 0 || typeFilter === 'excluded'
+      ? [{ id: 'excluded' as const, label: 'Excluidas', count: typeCount('excluded') }]
       : []),
     { id: 'all',          label: 'Todas',         count: stats.total },
   ];
@@ -188,6 +195,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                   {MODULE_LABELS[n.module] ?? n.module} —{' '}
                   {n.severity === 'high' ? 'Severa' : n.severity === 'medium' ? 'Moderada' : 'Leve'}
                   {' · '}{TYPE_LABELS[normalizeType(n.consultationType)]}
+                  {n.flagged ? ' · ⚠ Sospechosa' : ''}
                 </p>
               </div>
             </motion.div>
@@ -387,6 +395,7 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                     <th className="pb-2 pr-4">Severidad</th>
                     <th className="pb-2 pr-4">Emergencia</th>
                     <th className="pb-2 pr-4">Tipo de consulta</th>
+                    <th className="pb-2 pr-4">ID de sesión</th>
                     <th className="pb-2">Fecha</th>
                   </tr>
                 </thead>
@@ -416,6 +425,10 @@ export function StatsContent({ onUnauthorized, onConnectionChange }: StatsConten
                           <span className={`whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_BADGE_CLASSES[normalizeType(c.consultationType)]}`}>
                             {TYPE_LABELS[normalizeType(c.consultationType)]}
                           </span>
+                        </td>
+                        <td className="py-2 pr-4 font-mono text-xs text-gray-500 whitespace-nowrap" title={c.clientId || 'Sin ID de sesión'}>
+                          {c.clientId ? c.clientId.slice(0, 8) : '—'}
+                          {c.flagged && <span className="ml-1 not-italic" title={c.flagReason || 'Consulta sospechosa'}>⚠</span>}
                         </td>
                         <td className="py-2 text-gray-400 text-xs">
                           {new Date(c.timestamp).toLocaleDateString('es-MX')}

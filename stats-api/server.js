@@ -255,6 +255,19 @@ const io = new Server(httpServer, {
   }
 });
 
+// Solo el administrador puede escuchar las estadísticas en vivo (incluyen datos de sesiones)
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth && socket.handshake.auth.token;
+    if (!token) return next(new Error('No autorizado'));
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.type === 'user') return next(new Error('No autorizado'));
+    next();
+  } catch {
+    next(new Error('No autorizado'));
+  }
+});
+
 io.on('connection', (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
   socket.on('disconnect', () => {
@@ -286,6 +299,13 @@ const loginLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login. Intenta más tarde.' },
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+// Consulta pública de "¿mi sesión está penalizada?"
+const statusLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas peticiones. Intenta en 1 minuto.' },
 });
 
 const registerLimiter = rateLimit({
@@ -357,6 +377,41 @@ function getConsultationType(c) {
   return VALID_CONSULTATION_TYPES.includes(c && c.consultationType)
     ? c.consultationType
     : UNCLASSIFIED;
+}
+
+// ── Sesiones del navegador y penalizaciones ──────────────────
+// `clientId` es un UUID que el navegador genera una vez y conserva (localStorage).
+// NO es el sessionId de Prolog (ese cambia en cada consulta).
+const CLIENT_ID_REGEX = /^[A-Za-z0-9_-]{16,64}$/;
+const IP_HASH_SALT = process.env.IP_HASH_SALT || JWT_SECRET || 'modular';
+
+const DEFAULT_PENALTY_HOURS = 72;
+const MAX_PENALTY_HOURS = 24 * 90;
+
+// Frena (429): más de N consultas guardadas por minuto desde la misma sesión
+const HARD_LIMIT_PER_MINUTE = Number(process.env.CONSULTATION_HARD_LIMIT_PER_MIN) || 4;
+// Marca como sospechosa (no frena): N consultas en 10 minutos de la misma sesión
+// (o 2N desde la misma IP, que puede ser una red compartida como la de un salón)
+const FLAG_LIMIT = Number(process.env.CONSULTATION_FLAG_LIMIT) || 10;
+const FLAG_WINDOW_MS = 10 * 60 * 1000;
+
+// Se guarda un hash de la IP, nunca la IP en claro
+function hashIp(ip) {
+  return crypto.createHash('sha256').update(IP_HASH_SALT + String(ip || '')).digest('hex').slice(0, 16);
+}
+
+async function getActivePenalty(clientId) {
+  if (!clientId) return null;
+  return db.collection('penalties').findOne({
+    clientId,
+    liftedAt: null,
+    until: { $gt: new Date() },
+  });
+}
+
+async function emitStats() {
+  const updatedStats = await buildStats(db.collection('consultations'));
+  io.emit('stats_updated', updatedStats);
 }
 
 function validateConsultation(data) {
@@ -435,17 +490,24 @@ function buildStatsBlock(consultations) {
 }
 
 // Devuelve las estadísticas de TODAS las consultas en la raíz (compatible con
-// el formato anterior) y el mismo cálculo separado por tipo en `byType`.
+// el formato anterior) y el mismo cálculo separado en `byType`:
+//   real / training / unclassified → consultas NO excluidas, según su tipo
+//   excluded                       → consultas excluidas por una penalización
 async function buildStats(collection) {
   const raw = await collection.find({}).toArray();
 
-  // Normaliza el tipo: las consultas sin el campo quedan como 'unclassified'
-  const consultations = raw.map(c => ({ ...c, consultationType: getConsultationType(c) }));
+  // Normaliza el tipo (sin campo → 'unclassified') y nunca expone el hash de IP
+  const consultations = raw.map(({ ipHash, ...c }) => ({
+    ...c,
+    consultationType: getConsultationType(c),
+  }));
 
+  const included = consultations.filter(c => c.excluded !== true);
   const byType = {
-    real:         buildStatsBlock(consultations.filter(c => c.consultationType === 'real')),
-    training:     buildStatsBlock(consultations.filter(c => c.consultationType === 'training')),
-    unclassified: buildStatsBlock(consultations.filter(c => c.consultationType === UNCLASSIFIED)),
+    real:         buildStatsBlock(included.filter(c => c.consultationType === 'real')),
+    training:     buildStatsBlock(included.filter(c => c.consultationType === 'training')),
+    unclassified: buildStatsBlock(included.filter(c => c.consultationType === UNCLASSIFIED)),
+    excluded:     buildStatsBlock(consultations.filter(c => c.excluded === true)),
   };
 
   return { ...buildStatsBlock(consultations), byType };
@@ -457,6 +519,10 @@ async function connectDB() {
   const client = new MongoClient(MONGODB_URI);
   await client.connect();
   db = client.db('modular');
+  // Índices para las consultas por sesión / IP y para revisar penalizaciones rápido
+  await db.collection('consultations').createIndex({ clientId: 1, timestamp: -1 });
+  await db.collection('consultations').createIndex({ ipHash: 1, timestamp: -1 });
+  await db.collection('penalties').createIndex({ clientId: 1, liftedAt: 1, until: 1 });
   console.log('Conectado a MongoDB Atlas');
 }
 
@@ -1051,6 +1117,42 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
 
     const { module, severity, isEmergency, answers, recommendations, sessionId, consultationType } = req.body;
 
+    // ── Control de abuso (se verifica aquí, en el servidor) ───────
+    const clientId = CLIENT_ID_REGEX.test(String(req.body.clientId || '')) ? String(req.body.clientId) : null;
+    const ipHash = hashIp(req.ip);
+    const col = db.collection('consultations');
+    const now = Date.now();
+    let flagged = false;
+    let flagReason = null;
+
+    if (clientId) {
+      const penalty = await getActivePenalty(clientId);
+      if (penalty) {
+        return res.status(403).json({ error: 'penalized', until: penalty.until });
+      }
+      const lastMinute = await col.countDocuments({ clientId, timestamp: { $gte: new Date(now - 60 * 1000) } });
+      if (lastMinute >= HARD_LIMIT_PER_MINUTE) {
+        return res.status(429).json({ error: 'rate_limited' });
+      }
+      const recent = await col.countDocuments({ clientId, timestamp: { $gte: new Date(now - FLAG_WINDOW_MS) } });
+      if (recent + 1 >= FLAG_LIMIT) {
+        flagged = true;
+        flagReason = `${recent + 1} consultas en 10 min (misma sesión)`;
+      }
+    } else {
+      // Cliente viejo o petición manipulada: se guarda, pero marcada
+      flagged = true;
+      flagReason = 'Sin ID de sesión';
+    }
+
+    if (!flagged) {
+      const ipRecent = await col.countDocuments({ ipHash, timestamp: { $gte: new Date(now - FLAG_WINDOW_MS) } });
+      if (ipRecent + 1 >= FLAG_LIMIT * 2) {
+        flagged = true;
+        flagReason = `${ipRecent + 1} consultas en 10 min (misma IP)`;
+      }
+    }
+
     const record = {
       module,
       severity,
@@ -1060,6 +1162,10 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
       sessionId:       sessionId ? String(sessionId).slice(0, 100) : null,
       // 'training' | 'real'. Sin el campo (cliente viejo) → 'unclassified'; nunca se adivina.
       consultationType: getConsultationType({ consultationType }),
+      clientId,
+      ipHash,
+      flagged,
+      flagReason,
       timestamp:       new Date(),
     };
 
@@ -1075,6 +1181,7 @@ app.post('/api/consultations', saveLimiter, async (req, res) => {
       severity: record.severity,
       isEmergency: record.isEmergency,
       consultationType: record.consultationType,
+      flagged: record.flagged,
       timestamp: record.timestamp,
     });
 
@@ -1106,6 +1213,167 @@ app.get('/api/consultations', verifyAdmin, async (req, res) => {
     res.json(consultations.map(c => ({ ...c, consultationType: getConsultationType(c) })));
   } catch (error) {
     console.error('Error obteniendo consultas:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── Penalizaciones por uso indebido ──────────────────────────
+
+// Pública: el frontend pregunta si su sesión está bloqueada.
+// Solo devuelve si está bloqueada y hasta cuándo (nunca datos de la sesión).
+app.get('/api/penalties/status', statusLimiter, async (req, res) => {
+  try {
+    const clientId = String(req.query.clientId || '');
+    if (!CLIENT_ID_REGEX.test(clientId)) return res.json({ blocked: false });
+    const penalty = await getActivePenalty(clientId);
+    res.json(penalty ? { blocked: true, until: penalty.until } : { blocked: false });
+  } catch (error) {
+    console.error('Error consultando penalización:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Admin: resumen por sesión (cuántas consultas tiene cada una) + estado de penalización
+app.get('/api/admin/sessions', verifyAdmin, async (req, res) => {
+  try {
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const countIf = cond => ({ $sum: { $cond: [cond, 1, 0] } });
+
+    const rows = await db.collection('consultations').aggregate([
+      { $match: { clientId: { $type: 'string' } } },
+      { $group: {
+          _id: '$clientId',
+          total:    { $sum: 1 },
+          real:     countIf({ $eq: ['$consultationType', 'real'] }),
+          training: countIf({ $eq: ['$consultationType', 'training'] }),
+          lastHour: countIf({ $gte: ['$timestamp', hourAgo] }),
+          flagged:  countIf({ $eq: ['$flagged', true] }),
+          excluded: countIf({ $eq: ['$excluded', true] }),
+          firstAt:  { $min: '$timestamp' },
+          lastAt:   { $max: '$timestamp' },
+          ips:      { $addToSet: '$ipHash' },
+      } },
+      { $sort: { lastHour: -1, total: -1 } },
+      { $limit: 300 },
+    ]).toArray();
+
+    // Penalizaciones sin cerrar (activas o ya vencidas con consultas aún excluidas)
+    const penalties = await db.collection('penalties')
+      .find({ clientId: { $in: rows.map(r => r._id) }, liftedAt: null })
+      .sort({ createdAt: -1 })
+      .toArray();
+    const penaltyByClient = {};
+    penalties.forEach(p => { if (!penaltyByClient[p.clientId]) penaltyByClient[p.clientId] = p; });
+
+    // Cuántas otras sesiones comparten IP (pista de que alguien cambió de sesión)
+    const clientsByIp = {};
+    rows.forEach(r => (r.ips || []).forEach(ip => {
+      if (!ip) return;
+      (clientsByIp[ip] = clientsByIp[ip] || new Set()).add(r._id);
+    }));
+
+    const sessions = rows.map(r => {
+      const sharing = new Set();
+      (r.ips || []).forEach(ip => ip && clientsByIp[ip].forEach(c => c !== r._id && sharing.add(c)));
+      const p = penaltyByClient[r._id];
+      return {
+        clientId: r._id,
+        total: r.total, real: r.real, training: r.training,
+        lastHour: r.lastHour, flagged: r.flagged, excluded: r.excluded,
+        firstAt: r.firstAt, lastAt: r.lastAt,
+        sameIpSessions: sharing.size,
+        penalty: p ? {
+          id: String(p._id),
+          until: p.until,
+          hours: p.hours,
+          reason: p.reason || '',
+          excludeStats: p.excludeStats !== false,
+          active: p.until > new Date(),
+        } : null,
+      };
+    });
+
+    res.json({ sessions, flagLimit: FLAG_LIMIT });
+  } catch (error) {
+    console.error('Error obteniendo sesiones:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Admin: penalizar una sesión
+app.post('/api/admin/penalties', verifyAdmin, async (req, res) => {
+  try {
+    const { clientId, hours, reason, excludeStats } = req.body || {};
+    if (!CLIENT_ID_REGEX.test(String(clientId || ''))) {
+      return res.status(400).json({ error: 'ID de sesión inválido' });
+    }
+    const h = hours === undefined ? DEFAULT_PENALTY_HOURS : Number(hours);
+    if (!Number.isInteger(h) || h < 1 || h > MAX_PENALTY_HOURS) {
+      return res.status(400).json({ error: `Duración inválida (1 a ${MAX_PENALTY_HOURS} horas)` });
+    }
+    if (await getActivePenalty(clientId)) {
+      return res.status(409).json({ error: 'Esta sesión ya tiene una penalización activa' });
+    }
+
+    const createdAt = new Date();
+    const penalty = {
+      clientId,
+      createdAt,
+      until: new Date(createdAt.getTime() + h * 60 * 60 * 1000),
+      hours: h,
+      reason: reason ? String(reason).slice(0, 200) : '',
+      excludeStats: excludeStats !== false,
+      liftedAt: null,
+      createdBy: (req.admin && req.admin.user) || 'admin',
+    };
+    const result = await db.collection('penalties').insertOne(penalty);
+
+    // Se conservan las consultas, pero se apartan de las estadísticas
+    let excludedCount = 0;
+    if (penalty.excludeStats) {
+      const r = await db.collection('consultations').updateMany(
+        { clientId, excluded: { $ne: true } },
+        { $set: { excluded: true, excludedReason: 'penalized', penaltyId: result.insertedId } },
+      );
+      excludedCount = r.modifiedCount;
+    }
+
+    await emitStats();
+    res.json({ success: true, id: result.insertedId, until: penalty.until, excludedCount });
+  } catch (error) {
+    console.error('Error creando penalización:', error.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Admin: levantar una penalización (opcionalmente restaurando sus consultas a las estadísticas)
+app.post('/api/admin/penalties/:id/lift', verifyAdmin, async (req, res) => {
+  try {
+    if (!ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'ID de penalización inválido' });
+    }
+    const _id = new ObjectId(req.params.id);
+    const lifted = await db.collection('penalties').updateOne(
+      { _id, liftedAt: null },
+      { $set: { liftedAt: new Date() } },
+    );
+    if (lifted.matchedCount === 0) {
+      return res.status(404).json({ error: 'Penalización no encontrada o ya levantada' });
+    }
+
+    let restoredCount = 0;
+    if (req.body && req.body.restore === true) {
+      const r = await db.collection('consultations').updateMany(
+        { penaltyId: _id },
+        { $unset: { excluded: '', excludedReason: '', penaltyId: '' } },
+      );
+      restoredCount = r.modifiedCount;
+    }
+
+    await emitStats();
+    res.json({ success: true, restoredCount });
+  } catch (error) {
+    console.error('Error levantando penalización:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

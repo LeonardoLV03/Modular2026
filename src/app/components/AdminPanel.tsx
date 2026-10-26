@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { ArrowLeft, BarChart3, Users, TrendingUp, Wifi, WifiOff, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, BarChart3, Users, TrendingUp, ShieldAlert, Wifi, WifiOff, type LucideIcon } from 'lucide-react';
 import { StatsContent } from './StatsPanel';
 import { UsersContent } from './UsersPanel';
 import { CourseProgressContent } from './CourseProgressPanel';
+import { SessionsContent } from './SessionsPanel';
 
-type AdminTab = 'stats' | 'users' | 'progress';
+type AdminTab = 'stats' | 'sessions' | 'users' | 'progress';
 
 const TABS: { id: AdminTab; label: string; title: string; subtitle: string; icon: LucideIcon }[] = [
   { id: 'stats',    label: 'Estadísticas', title: 'Estadísticas de Uso', subtitle: 'Panel de análisis del sistema', icon: BarChart3  },
+  { id: 'sessions', label: 'Sesiones',     title: 'Control de Sesiones', subtitle: 'Uso indebido y penalizaciones', icon: ShieldAlert },
   { id: 'users',    label: 'Usuarios',     title: 'Gestión de Usuarios', subtitle: 'Cuentas registradas en Cursos', icon: Users      },
   { id: 'progress', label: 'Progreso',     title: 'Progreso en Cursos',  subtitle: 'Avance de cada usuario',        icon: TrendingUp },
 ];
@@ -76,6 +78,8 @@ export function AdminPanel({ onUnauthorized, onBack }: AdminPanelProps) {
       {/* Contenido de la pestaña activa */}
       {activeTab === 'stats' ? (
         <StatsContent onUnauthorized={onUnauthorized} onConnectionChange={setConnected} />
+      ) : activeTab === 'sessions' ? (
+        <SessionsContent onUnauthorized={onUnauthorized} />
       ) : activeTab === 'users' ? (
         <UsersContent onUnauthorized={onUnauthorized} />
       ) : (

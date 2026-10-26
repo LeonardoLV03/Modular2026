@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatInterface } from './components/ChatInterface';
+import { PenaltyNotice } from './components/PenaltyNotice';
 import { WelcomePanel } from './components/WelcomePanel';
 import { TermsModal } from './components/TermsModal';
 import { AdminPanel } from './components/AdminPanel';
@@ -11,6 +12,7 @@ import { VerifyEmail } from './components/VerifyEmail';
 import { ResetPassword } from './components/ResetPassword';
 import * as StatsAPI from './services/statsApi';
 import * as CoursesAPI from './services/coursesApi';
+import { isPenalized, getPenaltyUntil, refreshPenaltyStatus } from './services/penalty';
 
 export type Module =
   | 'desmayo' | 'hemorragia' | 'asfixia' | 'quemadura'
@@ -24,6 +26,20 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(() => !!StatsAPI.getToken());
   const [isCoursesUser, setIsCoursesUser] = useState(() => !!CoursesAPI.getToken());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chatBlocked, setChatBlocked] = useState(false);
+
+  // Consulta al servidor si esta sesión está penalizada: al abrir la app y al volver a ella.
+  // Así el dato ya está listo cuando la persona toca un módulo (sin esperas en una emergencia).
+  useEffect(() => {
+    void refreshPenaltyStatus();
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshPenaltyStatus(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, []);
 
   const currentPath = window.location.pathname;
   const urlToken = new URLSearchParams(window.location.search).get('token');
@@ -47,7 +63,15 @@ export default function App() {
   }
 
   const handleModuleSelect = (module: Module) => {
-    setSelectedModule(module);
+    // Sesión penalizada: no se abre el chat, se muestra el aviso
+    if (module && isPenalized()) {
+      setChatBlocked(true);
+      setSelectedModule(null);
+    } else {
+      setChatBlocked(false);
+      setSelectedModule(module);
+      if (module) void refreshPenaltyStatus();
+    }
     setShowAdmin(false);
     setShowCourses(false);
     setMobileMenuOpen(false);
@@ -60,9 +84,11 @@ export default function App() {
 
   const handleReset = () => {
     setSelectedModule(null);
+    setChatBlocked(false);
   };
 
   const handleShowAdmin = () => {
+    setChatBlocked(false);
     setSelectedModule(null);
     setShowCourses(false);
     setShowAdmin(true);
@@ -70,6 +96,7 @@ export default function App() {
   };
 
   const handleShowCourses = () => {
+    setChatBlocked(false);
     setSelectedModule(null);
     setShowAdmin(false);
     setShowCourses(true);
@@ -125,7 +152,9 @@ export default function App() {
       </aside>
 
       <main className="flex flex-1 flex-col overflow-hidden md:m-3 md:rounded-2xl">
-        {showChat ? (
+        {chatBlocked ? (
+          <PenaltyNotice until={getPenaltyUntil()} onBack={handleReset} />
+        ) : showChat ? (
           <ChatInterface module={selectedModule} onReset={handleReset} />
         ) : showAdmin ? (
           isAdmin ? (

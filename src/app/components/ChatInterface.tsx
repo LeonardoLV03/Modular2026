@@ -9,6 +9,7 @@ import { ConsultationTypeSwitch } from './ConsultationTypeSwitch';
 import { ConsultationTypeNotice } from './ConsultationTypeNotice';
 import * as PrologAPI from '../services/prologApi';
 import * as StatsAPI from '../services/statsApi';
+import { markPenalized } from '../services/penalty';
 import {
   useConsultationType,
   setConsultationType,
@@ -275,7 +276,11 @@ export function ChatInterface({ module, onReset }: ChatInterfaceProps) {
         recommendations: diagnosis.recommendations || [],
         sessionId: sessionId!,
         consultationType: typeAtSave,
-      }).catch(() => {});
+      })
+        // Si el servidor responde que la sesión está penalizada, la consulta en curso
+        // termina con normalidad y el bloqueo se aplica desde la siguiente.
+        .then(result => { if (result.status === 'penalized') markPenalized(result.until); })
+        .catch(() => {});
     } catch {
       addMessage(false, 'Error al obtener el diagnóstico. Intenta de nuevo.', false);
     }
